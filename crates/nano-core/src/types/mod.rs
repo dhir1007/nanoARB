@@ -15,8 +15,17 @@ pub use side::Side;
 pub use timestamp::Timestamp;
 
 /// Trade execution information
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[archive(check_bytes)]
 pub struct Trade {
     /// Trade ID
@@ -34,8 +43,17 @@ pub struct Trade {
 }
 
 /// Quote/BBO (Best Bid/Offer)
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[archive(check_bytes)]
 pub struct Quote {
     /// Instrument ID
@@ -95,8 +113,17 @@ impl Quote {
 }
 
 /// A price level in the order book
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[archive(check_bytes)]
 pub struct Level {
     /// Price at this level
@@ -136,8 +163,17 @@ impl Level {
 }
 
 /// Fill information for an executed order
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[archive(check_bytes)]
 pub struct Fill {
     /// Order ID that was filled
@@ -227,4 +263,3 @@ mod tests {
         assert_eq!(sell_fill.signed_quantity(), -10);
     }
 }
-

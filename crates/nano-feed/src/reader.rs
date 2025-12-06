@@ -67,9 +67,7 @@ impl MdpFileReader {
             if bytes_read == 0 {
                 if self.buffer_len > self.buffer_pos {
                     // Incomplete message at end of file
-                    return Err(FeedError::Incomplete {
-                        needed: 1,
-                    });
+                    return Err(FeedError::Incomplete { needed: 1 });
                 }
                 return Ok(None); // EOF
             }
@@ -78,6 +76,7 @@ impl MdpFileReader {
     }
 
     /// Create an iterator over messages
+    #[must_use]
     pub fn messages(self) -> MdpMessageIterator {
         MdpMessageIterator { reader: self }
     }
@@ -88,6 +87,7 @@ impl MdpFileReader {
     }
 
     /// Get current sequence number
+    #[must_use]
     pub fn current_sequence(&self) -> u32 {
         self.parser.expected_sequence()
     }
@@ -152,4 +152,3 @@ impl MdpMmapReader {
 mod tests {
     // Tests would require test data files
 }
-

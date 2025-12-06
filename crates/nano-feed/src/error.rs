@@ -84,4 +84,3 @@ impl From<nom::Err<nom::error::Error<&[u8]>>> for FeedError {
         }
     }
 }
-

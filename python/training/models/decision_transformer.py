@@ -1,7 +1,5 @@
 """Decision Transformer for offline RL market-making."""
 
-import math
-from typing import Optional
 
 import torch
 import torch.nn as nn

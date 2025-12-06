@@ -3,10 +3,10 @@
 use std::collections::HashMap;
 
 use nano_core::traits::{OrderBook, Strategy};
-use nano_core::types::{Fill, Order, OrderId, OrderType, Price, Quantity, Side, TimeInForce, Timestamp};
+use nano_core::types::{Fill, Order, OrderId, Price, Quantity, Side, TimeInForce, Timestamp};
 use serde::{Deserialize, Serialize};
 
-use crate::base::{BaseStrategy, StrategyState};
+use crate::base::BaseStrategy;
 
 /// Market maker configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,7 +74,13 @@ impl QuoteManager {
     }
 
     /// Record a submitted order
-    pub fn on_order_submit(&mut self, order_id: OrderId, side: Side, price: Price, quantity: Quantity) {
+    pub fn on_order_submit(
+        &mut self,
+        order_id: OrderId,
+        side: Side,
+        price: Price,
+        quantity: Quantity,
+    ) {
         self.pending_acks.insert(order_id, side);
         match side {
             Side::Buy => {
@@ -122,11 +128,13 @@ impl QuoteManager {
     }
 
     /// Get all bid order IDs
+    #[must_use]
     pub fn bid_order_ids(&self) -> Vec<OrderId> {
         self.bid_orders.keys().copied().collect()
     }
 
     /// Get all ask order IDs
+    #[must_use]
     pub fn ask_order_ids(&self) -> Vec<OrderId> {
         self.ask_orders.keys().copied().collect()
     }
@@ -199,13 +207,16 @@ impl MarketMakerStrategy {
 
         // Skew quotes to reduce inventory
         // Positive inventory -> lower bid, higher ask
-        let skew_ticks = (inv_ratio * self.config.inventory_skew_factor
+        let skew_ticks = (inv_ratio
+            * self.config.inventory_skew_factor
             * self.config.base_spread_ticks as f64) as i64;
 
         let half_spread = self.config.base_spread_ticks * self.config.tick_size / 2;
 
-        let bid_price = Price::from_raw(mid.raw() - half_spread - skew_ticks * self.config.tick_size);
-        let ask_price = Price::from_raw(mid.raw() + half_spread - skew_ticks * self.config.tick_size);
+        let bid_price =
+            Price::from_raw(mid.raw() - half_spread - skew_ticks * self.config.tick_size);
+        let ask_price =
+            Price::from_raw(mid.raw() + half_spread - skew_ticks * self.config.tick_size);
 
         (bid_price, ask_price)
     }
@@ -261,9 +272,8 @@ impl MarketMakerStrategy {
         // Generate bid orders
         if can_buy {
             for level in 0..self.config.num_levels {
-                let price = Price::from_raw(
-                    bid_price.raw() - (level as i64 * self.config.tick_size)
-                );
+                let price =
+                    Price::from_raw(bid_price.raw() - (level as i64 * self.config.tick_size));
 
                 let order_id = self.quotes.next_order_id();
                 let quantity = Quantity::new(self.config.order_size);
@@ -277,7 +287,8 @@ impl MarketMakerStrategy {
                     TimeInForce::GTC,
                 );
 
-                self.quotes.on_order_submit(order_id, Side::Buy, price, quantity);
+                self.quotes
+                    .on_order_submit(order_id, Side::Buy, price, quantity);
                 orders.push(order);
             }
         }
@@ -285,9 +296,8 @@ impl MarketMakerStrategy {
         // Generate ask orders
         if can_sell {
             for level in 0..self.config.num_levels {
-                let price = Price::from_raw(
-                    ask_price.raw() + (level as i64 * self.config.tick_size)
-                );
+                let price =
+                    Price::from_raw(ask_price.raw() + (level as i64 * self.config.tick_size));
 
                 let order_id = self.quotes.next_order_id();
                 let quantity = Quantity::new(self.config.order_size);
@@ -301,7 +311,8 @@ impl MarketMakerStrategy {
                     TimeInForce::GTC,
                 );
 
-                self.quotes.on_order_submit(order_id, Side::Sell, price, quantity);
+                self.quotes
+                    .on_order_submit(order_id, Side::Sell, price, quantity);
                 orders.push(order);
             }
         }
@@ -401,7 +412,12 @@ mod tests {
         let mut manager = QuoteManager::new();
 
         let order_id = manager.next_order_id();
-        manager.on_order_submit(order_id, Side::Buy, Price::from_raw(50000), Quantity::new(10));
+        manager.on_order_submit(
+            order_id,
+            Side::Buy,
+            Price::from_raw(50000),
+            Quantity::new(10),
+        );
 
         assert_eq!(manager.total_bid_quantity().value(), 10);
         assert_eq!(manager.bid_order_ids().len(), 1);
@@ -416,6 +432,8 @@ mod tests {
 
     #[test]
     fn test_inventory_skew() {
+        use crate::StrategyState;
+
         let config = MarketMakerConfig {
             base_spread_ticks: 2,
             inventory_skew_factor: 0.5,
@@ -435,4 +453,3 @@ mod tests {
         assert!(ask.raw() > mid.raw());
     }
 }
-

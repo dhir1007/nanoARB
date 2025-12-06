@@ -22,22 +22,22 @@ impl MdpHeader {
     /// Size of the header in bytes
     pub const SIZE: usize = 12;
 
-    /// Template ID for MDIncrementalRefreshBook
+    /// Template ID for `MDIncrementalRefreshBook`
     pub const TEMPLATE_BOOK_UPDATE: u16 = 46;
 
-    /// Template ID for MDIncrementalRefreshTrade
+    /// Template ID for `MDIncrementalRefreshTrade`
     pub const TEMPLATE_TRADE: u16 = 42;
 
-    /// Template ID for ChannelReset
+    /// Template ID for `ChannelReset`
     pub const TEMPLATE_CHANNEL_RESET: u16 = 4;
 
-    /// Template ID for SecurityStatus
+    /// Template ID for `SecurityStatus`
     pub const TEMPLATE_SECURITY_STATUS: u16 = 30;
 
-    /// Template ID for MDIncrementalRefreshOrderBook
+    /// Template ID for `MDIncrementalRefreshOrderBook`
     pub const TEMPLATE_ORDER_BOOK: u16 = 47;
 
-    /// Template ID for SnapshotFullRefresh
+    /// Template ID for `SnapshotFullRefresh`
     pub const TEMPLATE_SNAPSHOT: u16 = 52;
 }
 
@@ -126,6 +126,7 @@ impl TryFrom<u8> for EntryType {
 
 impl EntryType {
     /// Convert entry type to Side
+    #[must_use]
     pub fn to_side(self) -> Option<Side> {
         match self {
             EntryType::Bid | EntryType::ImpliedBid => Some(Side::Buy),
@@ -135,6 +136,7 @@ impl EntryType {
     }
 
     /// Check if this is an implied entry
+    #[must_use]
     pub fn is_implied(self) -> bool {
         matches!(self, EntryType::ImpliedBid | EntryType::ImpliedOffer)
     }
@@ -159,23 +161,26 @@ pub struct BookEntry {
 
 impl BookEntry {
     /// Convert to Price type with given exponent
+    #[must_use]
     pub fn to_price(&self, exponent: i8) -> Price {
         let multiplier = 10_i64.pow((-exponent) as u32);
         Price::from_raw(self.price / multiplier)
     }
 
     /// Convert to Quantity type
+    #[must_use]
     pub fn to_quantity(&self) -> Quantity {
         Quantity::new(self.quantity.max(0) as u32)
     }
 
     /// Get the side
+    #[must_use]
     pub fn side(&self) -> Option<Side> {
         self.entry_type.to_side()
     }
 }
 
-/// MDIncrementalRefreshBook message (Template 46)
+/// `MDIncrementalRefreshBook` message (Template 46)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BookUpdate {
     /// Transaction time in nanoseconds
@@ -194,32 +199,35 @@ pub struct BookUpdate {
 
 impl BookUpdate {
     /// Get the timestamp
+    #[must_use]
     pub fn timestamp(&self) -> Timestamp {
         Timestamp::from_nanos(self.transact_time as i64)
     }
 
     /// Check if this is the last message in a batch
+    #[must_use]
     pub fn is_last_in_batch(&self) -> bool {
         (self.match_event_indicator & 0x01) != 0
     }
 
     /// Check if this indicates end of event
+    #[must_use]
     pub fn is_end_of_event(&self) -> bool {
         (self.match_event_indicator & 0x80) != 0
     }
 
     /// Get bid entries
     pub fn bid_entries(&self) -> impl Iterator<Item = &BookEntry> {
-        self.entries.iter().filter(|e| {
-            matches!(e.entry_type, EntryType::Bid | EntryType::ImpliedBid)
-        })
+        self.entries
+            .iter()
+            .filter(|e| matches!(e.entry_type, EntryType::Bid | EntryType::ImpliedBid))
     }
 
     /// Get ask entries
     pub fn ask_entries(&self) -> impl Iterator<Item = &BookEntry> {
-        self.entries.iter().filter(|e| {
-            matches!(e.entry_type, EntryType::Offer | EntryType::ImpliedOffer)
-        })
+        self.entries
+            .iter()
+            .filter(|e| matches!(e.entry_type, EntryType::Offer | EntryType::ImpliedOffer))
     }
 }
 
@@ -240,17 +248,20 @@ pub struct TradeEntry {
 
 impl TradeEntry {
     /// Convert to Price type with given exponent
+    #[must_use]
     pub fn to_price(&self, exponent: i8) -> Price {
         let multiplier = 10_i64.pow((-exponent) as u32);
         Price::from_raw(self.price / multiplier)
     }
 
     /// Convert to Quantity type
+    #[must_use]
     pub fn to_quantity(&self) -> Quantity {
         Quantity::new(self.quantity.max(0) as u32)
     }
 
     /// Get the aggressor side
+    #[must_use]
     pub fn aggressor(&self) -> Side {
         if self.aggressor_side == 1 {
             Side::Sell
@@ -260,7 +271,7 @@ impl TradeEntry {
     }
 }
 
-/// MDIncrementalRefreshTrade message (Template 42)
+/// `MDIncrementalRefreshTrade` message (Template 42)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TradeUpdate {
     /// Transaction time in nanoseconds
@@ -279,6 +290,7 @@ pub struct TradeUpdate {
 
 impl TradeUpdate {
     /// Get the timestamp
+    #[must_use]
     pub fn timestamp(&self) -> Timestamp {
         Timestamp::from_nanos(self.transact_time as i64)
     }
@@ -362,6 +374,7 @@ pub enum MdpMessage {
 
 impl MdpMessage {
     /// Get the timestamp if available
+    #[must_use]
     pub fn timestamp(&self) -> Option<Timestamp> {
         match self {
             MdpMessage::BookUpdate(m) => Some(m.timestamp()),
@@ -374,6 +387,7 @@ impl MdpMessage {
     }
 
     /// Get the security ID if available
+    #[must_use]
     pub fn security_id(&self) -> Option<i32> {
         match self {
             MdpMessage::BookUpdate(m) => Some(m.security_id),
@@ -443,4 +457,3 @@ mod tests {
         assert_eq!(sell_aggressor.aggressor(), Side::Sell);
     }
 }
-

@@ -5,7 +5,10 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
-use crate::messages::*;
+use crate::messages::{
+    BookEntry, BookUpdate, EntryType, MdpMessage, Snapshot, SnapshotEntry, TradeEntry, TradeUpdate,
+    UpdateAction,
+};
 
 /// Configuration for synthetic data generation
 #[derive(Debug, Clone)]
@@ -96,7 +99,7 @@ pub struct SyntheticGenerator {
     current_mid: i64,
     current_time: u64,
     sequence: u32,
-    bid_levels: Vec<(i64, i32)>,  // (price, quantity)
+    bid_levels: Vec<(i64, i32)>, // (price, quantity)
     ask_levels: Vec<(i64, i32)>,
 }
 
@@ -128,7 +131,7 @@ impl SyntheticGenerator {
         self.bid_levels.clear();
         self.ask_levels.clear();
 
-        let half_spread = (self.config.avg_spread_ticks as i64 * self.config.tick_size) / 2;
+        let half_spread = (i64::from(self.config.avg_spread_ticks) * self.config.tick_size) / 2;
         let best_bid = self.current_mid - half_spread;
         let best_ask = self.current_mid + half_spread;
 
@@ -190,7 +193,11 @@ impl SyntheticGenerator {
                 quantity: qty,
                 num_orders: self.rng.gen_range(1..10),
                 price_level: (i + 1) as u8,
-                action: if i == 0 { UpdateAction::Change } else { UpdateAction::Change },
+                action: if i == 0 {
+                    UpdateAction::Change
+                } else {
+                    UpdateAction::Change
+                },
                 entry_type: EntryType::Bid,
             });
         }
@@ -224,9 +231,13 @@ impl SyntheticGenerator {
         let is_buy_aggressor = self.rng.gen_bool(0.5);
 
         let trade_price = if is_buy_aggressor {
-            self.ask_levels.first().map(|(p, _)| *p).unwrap_or(self.current_mid)
+            self.ask_levels
+                .first()
+                .map_or(self.current_mid, |(p, _)| *p)
         } else {
-            self.bid_levels.first().map(|(p, _)| *p).unwrap_or(self.current_mid)
+            self.bid_levels
+                .first()
+                .map_or(self.current_mid, |(p, _)| *p)
         };
 
         let trade_qty = self.rng.gen_range(1..=self.config.avg_trade_size * 2) as i32;
@@ -258,14 +269,14 @@ impl SyntheticGenerator {
 
     /// Update book levels based on current mid
     fn update_book_levels(&mut self) {
-        let half_spread = (self.config.avg_spread_ticks as i64 * self.config.tick_size) / 2;
+        let half_spread = (i64::from(self.config.avg_spread_ticks) * self.config.tick_size) / 2;
         let best_bid = self.current_mid - half_spread;
         let best_ask = self.current_mid + half_spread;
 
         // Pre-generate random values to avoid borrow conflicts
         let bid_len = self.bid_levels.len();
         let ask_len = self.ask_levels.len();
-        
+
         let bid_updates: Vec<(bool, i32)> = (0..bid_len)
             .map(|_| (self.rng.gen_bool(0.3), self.random_quantity()))
             .collect();
@@ -290,6 +301,7 @@ impl SyntheticGenerator {
     }
 
     /// Generate a snapshot of the current book state
+    #[must_use]
     pub fn generate_snapshot(&self) -> MdpMessage {
         let mut entries = Vec::new();
 
@@ -337,17 +349,17 @@ impl SyntheticGenerator {
     /// Get best bid
     #[must_use]
     pub fn best_bid(&self) -> Option<(Price, Quantity)> {
-        self.bid_levels.first().map(|(p, q)| {
-            (Price::from_raw(*p), Quantity::new(*q as u32))
-        })
+        self.bid_levels
+            .first()
+            .map(|(p, q)| (Price::from_raw(*p), Quantity::new(*q as u32)))
     }
 
     /// Get best ask
     #[must_use]
     pub fn best_ask(&self) -> Option<(Price, Quantity)> {
-        self.ask_levels.first().map(|(p, q)| {
-            (Price::from_raw(*p), Quantity::new(*q as u32))
-        })
+        self.ask_levels
+            .first()
+            .map(|(p, q)| (Price::from_raw(*p), Quantity::new(*q as u32)))
     }
 
     /// Generate N events
@@ -366,7 +378,7 @@ pub struct SyntheticIterator<'a> {
     generator: &'a mut SyntheticGenerator,
 }
 
-impl<'a> Iterator for SyntheticIterator<'a> {
+impl Iterator for SyntheticIterator<'_> {
     type Item = MdpMessage;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -387,8 +399,14 @@ mod tests {
         assert_eq!(events.len(), 100);
 
         // Should have mix of trades and book updates
-        let trades = events.iter().filter(|e| matches!(e, MdpMessage::Trade(_))).count();
-        let updates = events.iter().filter(|e| matches!(e, MdpMessage::BookUpdate(_))).count();
+        let trades = events
+            .iter()
+            .filter(|e| matches!(e, MdpMessage::Trade(_)))
+            .count();
+        let updates = events
+            .iter()
+            .filter(|e| matches!(e, MdpMessage::BookUpdate(_)))
+            .count();
 
         assert!(trades > 0, "Should have some trades");
         assert!(updates > 0, "Should have some book updates");
@@ -422,4 +440,3 @@ mod tests {
         }
     }
 }
-

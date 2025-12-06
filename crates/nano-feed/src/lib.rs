@@ -12,10 +12,10 @@
 //! The CME Globex Market Data Platform (MDP) 3.0 uses Simple Binary Encoding (SBE)
 //! for efficient message serialization. Key message types include:
 //!
-//! - MDIncrementalRefreshBook (Template ID 46): Order book updates
-//! - MDIncrementalRefreshTrade (Template ID 42): Trade messages
-//! - ChannelReset (Template ID 4): Channel state reset
-//! - SecurityStatus (Template ID 30): Instrument status changes
+//! - `MDIncrementalRefreshBook` (Template ID 46): Order book updates
+//! - `MDIncrementalRefreshTrade` (Template ID 42): Trade messages
+//! - `ChannelReset` (Template ID 4): Channel state reset
+//! - `SecurityStatus` (Template ID 30): Instrument status changes
 //!
 //! ## Example
 //!
@@ -39,7 +39,21 @@
 
 #![deny(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, clippy::all, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_lossless,
+    clippy::cast_possible_wrap,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::bool_to_int_with_if,
+    clippy::float_cmp,
+    clippy::unreadable_literal,
+    clippy::if_same_then_else,
+    unexpected_cfgs
+)]
 
 pub mod error;
 pub mod messages;
@@ -57,4 +71,3 @@ pub mod prelude {
     pub use crate::messages::*;
     pub use crate::parser::MdpParser;
 }
-

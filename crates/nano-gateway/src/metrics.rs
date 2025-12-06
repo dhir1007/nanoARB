@@ -6,7 +6,6 @@ use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{exponential_buckets, Histogram};
 use prometheus_client::registry::Registry;
 use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 
 /// Metrics registry for the trading engine
 #[derive(Debug)]
@@ -69,18 +68,10 @@ impl MetricsRegistry {
 
         // Gauges
         let position = Gauge::default();
-        registry.register(
-            "nanoarb_position",
-            "Current net position",
-            position.clone(),
-        );
+        registry.register("nanoarb_position", "Current net position", position.clone());
 
         let pnl = Gauge::<f64, AtomicU64>::default();
-        registry.register(
-            "nanoarb_pnl",
-            "Current P&L in dollars",
-            pnl.clone(),
-        );
+        registry.register("nanoarb_pnl", "Current P&L in dollars", pnl.clone());
 
         // Histograms with nanosecond buckets
         let ns_buckets: Vec<f64> = exponential_buckets(100.0, 2.0, 20).collect(); // 100ns to ~100ms
@@ -169,6 +160,7 @@ impl MetricsRegistry {
     }
 
     /// Encode metrics for Prometheus scraping
+    #[must_use]
     pub fn encode(&self) -> String {
         let mut buffer = String::new();
         encode(&mut buffer, &self.registry).expect("Failed to encode metrics");
@@ -201,4 +193,3 @@ mod tests {
         assert!(output.contains("nanoarb_fills_total"));
     }
 }
-

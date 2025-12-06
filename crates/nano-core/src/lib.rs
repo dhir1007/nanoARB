@@ -1,6 +1,6 @@
 //! # nano-core
 //!
-//! Core types, traits, and utilities for the NanoARB high-frequency trading engine.
+//! Core types, traits, and utilities for the `NanoARB` high-frequency trading engine.
 //!
 //! This crate provides:
 //! - Domain types: `Price`, `Quantity`, `Side`, `OrderId`, `Timestamp`
@@ -20,7 +20,18 @@
 
 #![deny(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, clippy::all, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_lossless,
+    clippy::cast_possible_wrap,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::missing_fields_in_debug,
+    clippy::float_cmp
+)]
 
 pub mod constants;
 pub mod error;
@@ -39,4 +50,3 @@ pub mod prelude {
     pub use crate::traits::*;
     pub use crate::types::*;
 }
-

@@ -64,7 +64,7 @@ impl BacktestMetrics {
         if self.num_trades == 0 {
             return 0.0;
         }
-        self.winning_trades as f64 / self.num_trades as f64
+        f64::from(self.winning_trades) / f64::from(self.num_trades)
     }
 
     /// Calculate profit factor
@@ -82,7 +82,7 @@ impl BacktestMetrics {
         if self.num_trades == 0 {
             return 0.0;
         }
-        self.realized_pnl / self.num_trades as f64
+        self.realized_pnl / f64::from(self.num_trades)
     }
 
     /// Calculate average winning trade
@@ -91,7 +91,7 @@ impl BacktestMetrics {
         if self.winning_trades == 0 {
             return 0.0;
         }
-        self.gross_profit / self.winning_trades as f64
+        self.gross_profit / f64::from(self.winning_trades)
     }
 
     /// Calculate average losing trade
@@ -100,7 +100,7 @@ impl BacktestMetrics {
         if self.losing_trades == 0 {
             return 0.0;
         }
-        self.gross_loss / self.losing_trades as f64
+        self.gross_loss / f64::from(self.losing_trades)
     }
 
     /// Calculate maker ratio
@@ -110,12 +110,12 @@ impl BacktestMetrics {
         if total == 0 {
             return 0.0;
         }
-        self.maker_fills as f64 / total as f64
+        f64::from(self.maker_fills) / f64::from(total)
     }
 
     /// Record a fill
     pub fn record_fill(&mut self, fill: &Fill) {
-        self.total_volume += fill.quantity.value() as u64;
+        self.total_volume += u64::from(fill.quantity.value());
         self.total_fees += fill.fee;
 
         match fill.side {
@@ -284,11 +284,7 @@ impl PerformanceStats {
         let mean = returns.clone().mean();
 
         // Downside deviation: std dev of negative returns only
-        let negative_returns: Vec<f64> = returns
-            .iter()
-            .filter(|&&r| r < 0.0)
-            .copied()
-            .collect();
+        let negative_returns: Vec<f64> = returns.iter().filter(|&&r| r < 0.0).copied().collect();
 
         if negative_returns.is_empty() {
             return f64::INFINITY;
@@ -454,10 +450,10 @@ mod tests {
         let mut metrics = BacktestMetrics::new();
 
         metrics.record_trade(100.0); // Win
-        metrics.record_trade(50.0);  // Win
+        metrics.record_trade(50.0); // Win
         metrics.record_trade(-30.0); // Loss
         metrics.record_trade(-20.0); // Loss
-        metrics.record_trade(80.0);  // Win
+        metrics.record_trade(80.0); // Win
 
         assert_eq!(metrics.num_trades, 5);
         assert_eq!(metrics.winning_trades, 3);
@@ -512,4 +508,3 @@ mod tests {
         assert!(stats.sharpe_ratio > 0.0);
     }
 }
-

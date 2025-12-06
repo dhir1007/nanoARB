@@ -1,10 +1,9 @@
 //! ONNX model inference with low latency.
 
-use std::path::Path;
 use std::time::Instant;
 
-use ndarray::{Array1, Array2, Array3, ArrayD, IxDyn};
-use nano_core::error::{Error, Result};
+use nano_core::error::Result;
+use ndarray::Array3;
 use serde::{Deserialize, Serialize};
 
 /// Model configuration
@@ -154,11 +153,12 @@ impl OnnxModel {
         let input_array = features.clone().into_dyn();
 
         // Create input tensor
-        let input_tensor = Value::from_array(input_array)
-            .map_err(|e| Error::ModelError(e.to_string()))?;
+        let input_tensor =
+            Value::from_array(input_array).map_err(|e| Error::ModelError(e.to_string()))?;
 
         // Run inference
-        let outputs = self.session
+        let outputs = self
+            .session
             .run(ort::inputs![&self.input_name => input_tensor])
             .map_err(|e| Error::ModelError(e.to_string()))?;
 
@@ -392,4 +392,3 @@ mod tests {
         assert_eq!(batch.pending_count(), 0);
     }
 }
-

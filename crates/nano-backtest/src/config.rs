@@ -1,9 +1,8 @@
 //! Backtest configuration.
 
 use nano_core::constants::{
-    CME_CLEARING_FEE, CME_EXCHANGE_FEE, CME_MAKER_FEE, CME_TAKER_FEE,
-    DEFAULT_COLO_LATENCY_NS, DEFAULT_JITTER_NS, DEFAULT_MAX_DRAWDOWN_PCT,
-    DEFAULT_MAX_INVENTORY,
+    CME_CLEARING_FEE, CME_EXCHANGE_FEE, CME_MAKER_FEE, CME_TAKER_FEE, DEFAULT_COLO_LATENCY_NS,
+    DEFAULT_JITTER_NS, DEFAULT_MAX_DRAWDOWN_PCT, DEFAULT_MAX_INVENTORY,
 };
 use serde::{Deserialize, Serialize};
 
@@ -168,7 +167,7 @@ impl FeeConfig {
         } else {
             self.taker_fee
         };
-        (base_fee + self.exchange_fee + self.clearing_fee) * quantity as f64
+        (base_fee + self.exchange_fee + self.clearing_fee) * f64::from(quantity)
     }
 }
 
@@ -301,4 +300,3 @@ mod tests {
         assert!(config.risk.max_position < 100);
     }
 }
-

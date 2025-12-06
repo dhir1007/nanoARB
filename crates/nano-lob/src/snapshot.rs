@@ -18,7 +18,7 @@ pub struct LobSnapshot {
     /// Mid price at snapshot time
     pub mid_price: f64,
     /// Normalized LOB tensor: (levels, fields)
-    /// Fields: [bid_price_delta, bid_qty, ask_price_delta, ask_qty]
+    /// Fields: [`bid_price_delta`, `bid_qty`, `ask_price_delta`, `ask_qty`]
     pub tensor: Array2<f32>,
 }
 
@@ -26,7 +26,7 @@ impl LobSnapshot {
     /// Create a snapshot from an order book
     #[must_use]
     pub fn from_book(book: &OrderBook) -> Self {
-        let mid_price = book.mid_price().map(|p| p.as_f64()).unwrap_or(0.0);
+        let mid_price = book.mid_price().map_or(0.0, nano_core::Price::as_f64);
         let timestamp = book.timestamp();
         let sequence = book.sequence();
 
@@ -228,9 +228,8 @@ impl SnapshotRingBuffer {
         }
 
         let mean = returns.iter().sum::<f64>() / returns.len() as f64;
-        let variance = returns.iter()
-            .map(|r| (r - mean).powi(2))
-            .sum::<f64>() / returns.len() as f64;
+        let variance =
+            returns.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / returns.len() as f64;
 
         variance.sqrt()
     }
@@ -285,6 +284,7 @@ impl TensorBuilder {
 
     /// Build feature tensor from snapshot buffer
     /// Returns (features, labels) where labels are future returns at each horizon
+    #[must_use]
     pub fn build(&self, buffer: &SnapshotRingBuffer) -> Option<(Array3<f32>, Vec<Vec<f64>>)> {
         let features = buffer.to_tensor(self.window_size)?;
 
@@ -425,4 +425,3 @@ mod tests {
         }
     }
 }
-

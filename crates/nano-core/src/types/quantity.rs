@@ -20,8 +20,19 @@ use serde::{Deserialize, Serialize};
 /// let qty = Quantity::new(100);
 /// assert_eq!(qty.value(), 100);
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct Quantity(u32);
 
@@ -165,8 +176,19 @@ impl fmt::Display for Quantity {
 }
 
 /// Signed quantity for positions (positive = long, negative = short)
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct SignedQuantity(i64);
 
@@ -289,4 +311,3 @@ mod tests {
         assert_eq!(short.abs().value(), 50);
     }
 }
-

@@ -8,8 +8,19 @@ use serde::{Deserialize, Serialize};
 use super::{Price, Quantity, Side, Timestamp};
 
 /// Unique order identifier
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct OrderId(u64);
 
@@ -54,12 +65,24 @@ impl From<OrderId> for u64 {
 }
 
 /// Order type
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum OrderType {
     /// Limit order - specify price and quantity
+    #[default]
     Limit = 0,
     /// Market order - execute at best available price
     Market = 1,
@@ -67,12 +90,6 @@ pub enum OrderType {
     Stop = 2,
     /// Stop-limit order - trigger at stop price, then place limit order
     StopLimit = 3,
-}
-
-impl Default for OrderType {
-    fn default() -> Self {
-        OrderType::Limit
-    }
 }
 
 impl fmt::Debug for OrderType {
@@ -93,12 +110,24 @@ impl fmt::Display for OrderType {
 }
 
 /// Time in force for orders
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum TimeInForce {
     /// Good till cancelled
+    #[default]
     GTC = 0,
     /// Immediate or cancel (partial fills allowed)
     IOC = 1,
@@ -108,12 +137,6 @@ pub enum TimeInForce {
     Day = 3,
     /// Good till date
     GTD = 4,
-}
-
-impl Default for TimeInForce {
-    fn default() -> Self {
-        TimeInForce::GTC
-    }
 }
 
 impl fmt::Debug for TimeInForce {
@@ -135,12 +158,24 @@ impl fmt::Display for TimeInForce {
 }
 
 /// Order status
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum OrderStatus {
     /// Order is pending submission
+    #[default]
     Pending = 0,
     /// Order has been submitted to exchange
     Submitted = 1,
@@ -156,12 +191,6 @@ pub enum OrderStatus {
     Rejected = 6,
     /// Order has expired
     Expired = 7,
-}
-
-impl Default for OrderStatus {
-    fn default() -> Self {
-        OrderStatus::Pending
-    }
 }
 
 impl OrderStatus {
@@ -211,8 +240,9 @@ impl fmt::Display for OrderStatus {
 }
 
 /// A trading order
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone, Copy, PartialEq, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct Order {
     /// Unique order identifier
@@ -274,12 +304,7 @@ impl Order {
 
     /// Create a new market order
     #[must_use]
-    pub fn new_market(
-        id: OrderId,
-        instrument_id: u32,
-        side: Side,
-        quantity: Quantity,
-    ) -> Self {
+    pub fn new_market(id: OrderId, instrument_id: u32, side: Side, quantity: Quantity) -> Self {
         let now = Timestamp::now();
         Self {
             id,
@@ -332,10 +357,10 @@ impl Order {
 
     /// Update order with a fill
     pub fn apply_fill(&mut self, fill_price: Price, fill_qty: Quantity, timestamp: Timestamp) {
-        let prev_filled = self.filled_quantity.value() as i64;
+        let prev_filled = i64::from(self.filled_quantity.value());
         let prev_notional = prev_filled * self.avg_fill_price;
-        let new_notional = prev_notional + (fill_qty.value() as i64 * fill_price.raw());
-        let new_filled = prev_filled + fill_qty.value() as i64;
+        let new_notional = prev_notional + (i64::from(fill_qty.value()) * fill_price.raw());
+        let new_filled = prev_filled + i64::from(fill_qty.value());
 
         self.filled_quantity = self.filled_quantity.saturating_add(fill_qty);
         self.avg_fill_price = if new_filled > 0 {
@@ -421,4 +446,3 @@ mod tests {
         assert!(OrderStatus::Cancelled.is_terminal());
     }
 }
-

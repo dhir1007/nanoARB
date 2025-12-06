@@ -24,8 +24,19 @@ use crate::constants::{NS_PER_MS, NS_PER_SEC, NS_PER_US};
 /// let later = ts.add_nanos(1000);
 /// assert!(later > ts);
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct Timestamp(i64);
 
@@ -158,7 +169,7 @@ impl Timestamp {
         }
     }
 
-    /// Convert to chrono DateTime
+    /// Convert to chrono `DateTime`
     #[inline]
     #[must_use]
     pub fn to_datetime(&self) -> chrono::DateTime<chrono::Utc> {
@@ -300,4 +311,3 @@ mod tests {
         assert_eq!(ts.subsec_nanos(), 234_567_890);
     }
 }
-

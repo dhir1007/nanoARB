@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use nano_core::types::{Fill, Order, OrderId, Price, Quantity, Side, Timestamp};
+use nano_core::types::{Fill, Order, OrderId, Timestamp};
 use serde::{Deserialize, Serialize};
 
 /// Event types in the backtest simulation
@@ -214,7 +214,8 @@ impl EventQueue {
     /// Push an event with auto-generated sequence number
     pub fn push(&mut self, timestamp: Timestamp, event_type: EventType) {
         self.sequence_counter += 1;
-        self.heap.push(Event::new(timestamp, self.sequence_counter, event_type));
+        self.heap
+            .push(Event::new(timestamp, self.sequence_counter, event_type));
     }
 
     /// Push an event with explicit sequence number
@@ -325,4 +326,3 @@ mod tests {
         assert!(e2.sequence < e3.sequence);
     }
 }
-

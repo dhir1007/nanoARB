@@ -1,9 +1,9 @@
 //! Signal-based strategy implementation.
 
 use nano_core::traits::{OrderBook, Strategy};
-use nano_core::types::{Fill, Order, OrderId, Price, Quantity, Side, TimeInForce, Timestamp};
+use nano_core::types::{Fill, Order, OrderId, Quantity, Side, TimeInForce, Timestamp};
 
-use crate::base::{BaseStrategy, StrategyState};
+use crate::base::BaseStrategy;
 
 /// Signal configuration for trading
 #[derive(Debug, Clone)]
@@ -155,11 +155,7 @@ impl SignalStrategy {
     }
 
     /// Process a signal and generate orders
-    pub fn process_signal(
-        &mut self,
-        signal: &Signal,
-        book: &dyn OrderBook,
-    ) -> Vec<Order> {
+    pub fn process_signal(&mut self, signal: &Signal, book: &dyn OrderBook) -> Vec<Order> {
         let mut orders = Vec::new();
 
         // Don't trade if we have a pending order
@@ -196,8 +192,8 @@ impl SignalStrategy {
 
         // Calculate order price
         let order_price = match side {
-            Side::Buy => book.best_bid().map(|(p, _)| p).unwrap_or(current_price),
-            Side::Sell => book.best_ask().map(|(p, _)| p).unwrap_or(current_price),
+            Side::Buy => book.best_bid().map_or(current_price, |(p, _)| p),
+            Side::Sell => book.best_ask().map_or(current_price, |(p, _)| p),
         };
 
         let order_id = OrderId::new(self.next_order_id);

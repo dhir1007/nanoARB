@@ -2,11 +2,9 @@
 
 use nano_core::error::{Error, Result};
 use nano_core::traits::RiskManager as RiskManagerTrait;
-use nano_core::types::{Order, OrderId, Price, Quantity, Side, Timestamp};
-use serde::{Deserialize, Serialize};
+use nano_core::types::{Order, Side};
 
 use crate::config::RiskConfig;
-use crate::position::PositionTracker;
 
 /// Risk management state and checks
 #[derive(Debug)]
@@ -66,9 +64,9 @@ impl RiskManager {
 
         // Check resulting position
         let signed_qty = if order.side == Side::Buy {
-            order.quantity.value() as i64
+            i64::from(order.quantity.value())
         } else {
-            -(order.quantity.value() as i64)
+            -i64::from(order.quantity.value())
         };
         let resulting_position = current_position + signed_qty;
 
@@ -294,19 +292,19 @@ impl RiskManagerTrait for RiskManager {
     }
 }
 
-/// Value at Risk (VaR) calculator
+/// Value at Risk (`VaR`) calculator
 #[derive(Debug)]
 pub struct VaRCalculator {
     /// Historical returns
     returns: Vec<f64>,
-    /// Confidence level (e.g., 0.95 for 95% VaR)
+    /// Confidence level (e.g., 0.95 for 95% `VaR`)
     confidence: f64,
     /// Window size for rolling calculation
     window_size: usize,
 }
 
 impl VaRCalculator {
-    /// Create a new VaR calculator
+    /// Create a new `VaR` calculator
     #[must_use]
     pub fn new(confidence: f64, window_size: usize) -> Self {
         Self {
@@ -324,7 +322,7 @@ impl VaRCalculator {
         }
     }
 
-    /// Calculate historical VaR
+    /// Calculate historical `VaR`
     #[must_use]
     pub fn calculate(&self) -> Option<f64> {
         if self.returns.len() < 30 {
@@ -338,7 +336,7 @@ impl VaRCalculator {
         Some(-sorted[index]) // VaR is typically reported as positive number
     }
 
-    /// Calculate Expected Shortfall (CVaR)
+    /// Calculate Expected Shortfall (`CVaR`)
     #[must_use]
     pub fn expected_shortfall(&self) -> Option<f64> {
         if self.returns.len() < 30 {
@@ -368,7 +366,9 @@ impl VaRCalculator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nano_core::types::{OrderId, OrderStatus, OrderType, TimeInForce};
+    use nano_core::types::{
+        OrderId, OrderStatus, OrderType, Price, Quantity, TimeInForce, Timestamp,
+    };
 
     fn create_test_order(side: Side, quantity: u32) -> Order {
         Order {
@@ -473,4 +473,3 @@ mod tests {
         assert!(es > var_value); // ES should be more conservative than VaR
     }
 }
-

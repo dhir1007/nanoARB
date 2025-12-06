@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use nano_core::types::{Fill, Instrument, Price, Quantity, Side, Timestamp};
+use nano_core::types::{Fill, Instrument, Price, Side, Timestamp};
 use serde::{Deserialize, Serialize};
 
 /// Position tracker for a single instrument
@@ -44,8 +44,12 @@ impl Position {
 
     /// Apply a fill to the position
     pub fn apply_fill(&mut self, fill: &Fill, tick_value: f64) {
-        let fill_qty = fill.quantity.value() as i64;
-        let signed_qty = if fill.side == Side::Buy { fill_qty } else { -fill_qty };
+        let fill_qty = i64::from(fill.quantity.value());
+        let signed_qty = if fill.side == Side::Buy {
+            fill_qty
+        } else {
+            -fill_qty
+        };
         let fill_price = fill.price.raw();
 
         self.total_traded += fill_qty as u64;
@@ -53,8 +57,8 @@ impl Position {
         self.last_update = fill.timestamp;
 
         // Check if this is adding to position or reducing
-        let same_direction = (self.quantity >= 0 && signed_qty > 0)
-            || (self.quantity <= 0 && signed_qty < 0);
+        let same_direction =
+            (self.quantity >= 0 && signed_qty > 0) || (self.quantity <= 0 && signed_qty < 0);
 
         if same_direction || self.quantity == 0 {
             // Adding to position - update average price
@@ -179,7 +183,9 @@ impl PositionTracker {
     pub fn register_instrument(&mut self, instrument: Instrument) {
         let id = instrument.id;
         self.instruments.insert(id, instrument);
-        self.positions.entry(id).or_insert_with(|| Position::new(id));
+        self.positions
+            .entry(id)
+            .or_insert_with(|| Position::new(id));
     }
 
     /// Apply a fill
@@ -190,12 +196,13 @@ impl PositionTracker {
         let instrument_id = if instrument_id == 0 { 1 } else { instrument_id };
 
         // Try to get instrument, default to ES-like tick value
-        let tick_value = self.instruments
+        let tick_value = self
+            .instruments
             .get(&instrument_id)
-            .map(|i| i.tick_value as f64 / 100.0)
-            .unwrap_or(12.5);
+            .map_or(12.5, |i| i.tick_value as f64 / 100.0);
 
-        let position = self.positions
+        let position = self
+            .positions
             .entry(instrument_id)
             .or_insert_with(|| Position::new(instrument_id));
 
@@ -209,12 +216,13 @@ impl PositionTracker {
 
     /// Apply fill for a specific instrument
     pub fn apply_fill_for_instrument(&mut self, instrument_id: u32, fill: &Fill) {
-        let tick_value = self.instruments
+        let tick_value = self
+            .instruments
             .get(&instrument_id)
-            .map(|i| i.tick_value as f64 / 100.0)
-            .unwrap_or(12.5);
+            .map_or(12.5, |i| i.tick_value as f64 / 100.0);
 
-        let position = self.positions
+        let position = self
+            .positions
             .entry(instrument_id)
             .or_insert_with(|| Position::new(instrument_id));
 
@@ -295,13 +303,13 @@ impl PositionTracker {
     /// Check if all positions are flat
     #[must_use]
     pub fn is_flat(&self) -> bool {
-        self.positions.values().all(|p| p.is_flat())
+        self.positions.values().all(Position::is_flat)
     }
 
     /// Get total absolute position across all instruments
     #[must_use]
     pub fn total_exposure(&self) -> u64 {
-        self.positions.values().map(|p| p.size()).sum()
+        self.positions.values().map(Position::size).sum()
     }
 
     /// Reset all positions
@@ -318,7 +326,7 @@ impl PositionTracker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nano_core::types::OrderId;
+    use nano_core::types::{OrderId, Price, Quantity, Timestamp};
 
     fn create_fill(price: i64, quantity: u32, side: Side, fee: f64) -> Fill {
         Fill {
@@ -414,4 +422,3 @@ mod tests {
         assert!(pos.realized_pnl > 0.0);
     }
 }
-

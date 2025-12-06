@@ -1,4 +1,4 @@
-//! Constants used throughout the NanoARB trading engine.
+//! Constants used throughout the `NanoARB` trading engine.
 
 /// Maximum number of price levels to track in the order book
 pub const MAX_BOOK_LEVELS: usize = 20;
@@ -9,7 +9,7 @@ pub const FEATURE_LEVELS: usize = 10;
 /// Number of historical snapshots to keep for temporal modeling
 pub const SNAPSHOT_HISTORY_SIZE: usize = 200;
 
-/// Number of fields per level in LOB tensor (bid_price, bid_qty, ask_price, ask_qty)
+/// Number of fields per level in LOB tensor (`bid_price`, `bid_qty`, `ask_price`, `ask_qty`)
 pub const FIELDS_PER_LEVEL: usize = 4;
 
 /// Nanoseconds per microsecond
@@ -62,4 +62,3 @@ pub const CME_EXCHANGE_FEE: f64 = 1.18;
 
 /// Clearing fee per contract
 pub const CME_CLEARING_FEE: f64 = 0.10;
-

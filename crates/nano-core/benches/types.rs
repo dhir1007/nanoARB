@@ -61,7 +61,7 @@ fn bench_timestamp_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("timestamp");
 
     group.bench_function("now", |b| {
-        b.iter(|| Timestamp::now());
+        b.iter(Timestamp::now);
     });
 
     group.bench_function("from_nanos", |b| {
@@ -104,4 +104,3 @@ criterion_group!(
     bench_side_operations
 );
 criterion_main!(benches);
-

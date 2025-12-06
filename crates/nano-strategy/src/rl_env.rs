@@ -48,17 +48,27 @@ impl MarketMakingAction {
     /// Convert to array for neural network input
     #[must_use]
     pub fn to_array(&self) -> [f64; 5] {
-        [self.bid_skew, self.ask_skew, self.spread, self.bid_size, self.ask_size]
+        [
+            self.bid_skew,
+            self.ask_skew,
+            self.spread,
+            self.bid_size,
+            self.ask_size,
+        ]
     }
 
     /// Check if action is valid
     #[must_use]
     pub fn is_valid(&self) -> bool {
-        self.bid_skew >= -1.0 && self.bid_skew <= 1.0
-            && self.ask_skew >= -1.0 && self.ask_skew <= 1.0
+        self.bid_skew >= -1.0
+            && self.bid_skew <= 1.0
+            && self.ask_skew >= -1.0
+            && self.ask_skew <= 1.0
             && self.spread > 0.0
-            && self.bid_size >= 0.0 && self.bid_size <= 1.0
-            && self.ask_size >= 0.0 && self.ask_size <= 1.0
+            && self.bid_size >= 0.0
+            && self.bid_size <= 1.0
+            && self.ask_size >= 0.0
+            && self.ask_size <= 1.0
     }
 }
 
@@ -213,14 +223,18 @@ impl MarketMakingEnv {
     }
 
     /// Take a step in the environment
-    pub fn step(&mut self, action: MarketMakingAction, book: &OrderBook) -> (MarketMakingState, f64, bool) {
+    pub fn step(
+        &mut self,
+        action: MarketMakingAction,
+        book: &OrderBook,
+    ) -> (MarketMakingState, f64, bool) {
         self.step_count += 1;
 
         // Update snapshot buffer
         self.snapshot_buffer.push_book(book);
 
         // Get current mid price
-        let mid = book.mid_price().map(|p| p.as_f64()).unwrap_or(0.0);
+        let mid = book.mid_price().map_or(0.0, nano_core::Price::as_f64);
         self.recent_mids.push(mid);
         if self.recent_mids.len() > 100 {
             self.recent_mids.remove(0);
@@ -250,7 +264,11 @@ impl MarketMakingEnv {
     }
 
     /// Simulate fills based on action and market state
-    fn simulate_fills(&mut self, action: &MarketMakingAction, book: &OrderBook) -> (Vec<(Side, f64, u32)>, f64) {
+    fn simulate_fills(
+        &mut self,
+        action: &MarketMakingAction,
+        book: &OrderBook,
+    ) -> (Vec<(Side, f64, u32)>, f64) {
         let mut fills = Vec::new();
         let mut adverse_cost = 0.0;
 
@@ -261,12 +279,13 @@ impl MarketMakingEnv {
 
         // Simple fill simulation based on spread and book state
         // In practice, this would be much more sophisticated
-        let spread = book.spread().map(|s| s.as_f64()).unwrap_or(0.0);
+        let spread = book.spread().map_or(0.0, nano_core::Price::as_f64);
 
         // Check if our quotes would be hit
         let bid_price = mid - action.spread * self.config.tick_size / 2.0
             + action.bid_skew * self.config.tick_size;
-        let ask_price = mid + action.spread * self.config.tick_size / 2.0
+        let ask_price = mid
+            + action.spread * self.config.tick_size / 2.0
             + action.ask_skew * self.config.tick_size;
 
         // Probability of fill based on quote aggressiveness
@@ -278,7 +297,7 @@ impl MarketMakingEnv {
         let mut rng = rand::thread_rng();
 
         if rng.gen::<f64>() < bid_fill_prob && self.inventory < self.config.max_inventory {
-            let qty = (action.bid_size * self.config.max_order_size as f64) as u32;
+            let qty = (action.bid_size * f64::from(self.config.max_order_size)) as u32;
             if qty > 0 {
                 fills.push((Side::Buy, bid_price, qty));
                 self.apply_fill(Side::Buy, bid_price, qty, true);
@@ -286,7 +305,7 @@ impl MarketMakingEnv {
         }
 
         if rng.gen::<f64>() < ask_fill_prob && self.inventory > -self.config.max_inventory {
-            let qty = (action.ask_size * self.config.max_order_size as f64) as u32;
+            let qty = (action.ask_size * f64::from(self.config.max_order_size)) as u32;
             if qty > 0 {
                 fills.push((Side::Sell, ask_price, qty));
                 self.apply_fill(Side::Sell, ask_price, qty, true);
@@ -307,12 +326,16 @@ impl MarketMakingEnv {
 
     /// Apply a fill to position
     fn apply_fill(&mut self, side: Side, price: f64, quantity: u32, is_maker: bool) {
-        let signed_qty = if side == Side::Buy { quantity as i64 } else { -(quantity as i64) };
+        let signed_qty = if side == Side::Buy {
+            i64::from(quantity)
+        } else {
+            -i64::from(quantity)
+        };
 
         let fee = if is_maker {
-            self.config.maker_fee * quantity as f64
+            self.config.maker_fee * f64::from(quantity)
         } else {
-            self.config.taker_fee * quantity as f64
+            self.config.taker_fee * f64::from(quantity)
         };
 
         self.total_fees += fee;
@@ -324,13 +347,14 @@ impl MarketMakingEnv {
         // Calculate realized P&L if reducing position
         if old_inventory != 0 && self.inventory.signum() != old_inventory.signum() {
             // Closed or reversed position
-            let closed_qty = old_inventory.abs().min(quantity as i64);
+            let closed_qty = old_inventory.abs().min(i64::from(quantity));
             let pnl_per_contract = if old_inventory > 0 {
                 price - self.avg_entry_price
             } else {
                 self.avg_entry_price - price
             };
-            self.pnl += pnl_per_contract * closed_qty as f64 / self.config.tick_size * self.config.tick_value;
+            self.pnl += pnl_per_contract * closed_qty as f64 / self.config.tick_size
+                * self.config.tick_value;
         }
 
         // Update average entry price
@@ -338,7 +362,7 @@ impl MarketMakingEnv {
             if old_inventory.signum() == signed_qty.signum() || old_inventory == 0 {
                 // Adding to position
                 let old_value = old_inventory.abs() as f64 * self.avg_entry_price;
-                let new_value = quantity as f64 * price;
+                let new_value = f64::from(quantity) * price;
                 self.avg_entry_price = (old_value + new_value) / self.inventory.abs() as f64;
             } else if self.inventory.signum() == signed_qty.signum() {
                 // Reversed position
@@ -357,8 +381,8 @@ impl MarketMakingEnv {
         }
 
         let price_diff = current_mid - self.avg_entry_price;
-        self.unrealized_pnl = price_diff * self.inventory as f64 / self.config.tick_size
-            * self.config.tick_value;
+        self.unrealized_pnl =
+            price_diff * self.inventory as f64 / self.config.tick_size * self.config.tick_value;
     }
 
     /// Calculate reward
@@ -374,7 +398,7 @@ impl MarketMakingEnv {
         for (side, price, qty) in &fills {
             let half_spread = action.spread * self.config.tick_size / 2.0;
             let edge = half_spread / self.config.tick_size * self.config.tick_value;
-            reward += edge * *qty as f64;
+            reward += edge * f64::from(*qty);
         }
 
         // Inventory penalty (quadratic)
@@ -387,8 +411,9 @@ impl MarketMakingEnv {
 
         // Fee cost
         if !fills.is_empty() {
-            let fee_cost: f64 = fills.iter()
-                .map(|(_, _, q)| self.config.maker_fee * *q as f64)
+            let fee_cost: f64 = fills
+                .iter()
+                .map(|(_, _, q)| self.config.maker_fee * f64::from(*q))
                 .sum();
             reward -= fee_cost;
         }
@@ -400,7 +425,7 @@ impl MarketMakingEnv {
     fn get_state(&self) -> MarketMakingState {
         // Get LOB features from snapshot buffer
         let lob_features = if let Some(tensor) = self.snapshot_buffer.to_tensor(10) {
-            tensor.iter().map(|&x| x).collect()
+            tensor.iter().copied().collect()
         } else {
             vec![0.0; 400] // Default if no data
         };
@@ -419,9 +444,9 @@ impl MarketMakingEnv {
             lob_features,
             inventory: self.inventory as f32 / self.config.max_inventory as f32,
             unrealized_pnl: (self.unrealized_pnl / 1000.0) as f32, // Normalize
-            time_since_trade: 0.0, // Would need timestamp tracking
-            spread: 1.0, // Default
-            imbalance: 0.0, // Would need book data
+            time_since_trade: 0.0,                                 // Would need timestamp tracking
+            spread: 1.0,                                           // Default
+            imbalance: 0.0,                                        // Would need book data
             recent_returns,
         }
     }
@@ -494,4 +519,3 @@ mod tests {
         assert!(!env.is_done());
     }
 }
-

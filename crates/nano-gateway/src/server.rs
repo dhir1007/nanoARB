@@ -70,10 +70,7 @@ pub struct HealthResponse {
 }
 
 /// Start the metrics server
-pub async fn start_metrics_server(
-    state: Arc<ServerState>,
-    port: u16,
-) -> anyhow::Result<()> {
+pub async fn start_metrics_server(state: Arc<ServerState>, port: u16) -> anyhow::Result<()> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
 
@@ -102,7 +99,7 @@ pub async fn start_metrics_server(
                 let healthy = state.is_healthy().await;
                 let status = if healthy { "ok" } else { "unhealthy" };
                 let code = if healthy { 200 } else { 503 };
-                let body = format!(r#"{{"status":"{}","version":"0.1.0"}}"#, status);
+                let body = format!(r#"{{"status":"{status}","version":"0.1.0"}}"#);
                 format!(
                     "HTTP/1.1 {} OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
                     code,
@@ -117,4 +114,3 @@ pub async fn start_metrics_server(
         });
     }
 }
-
