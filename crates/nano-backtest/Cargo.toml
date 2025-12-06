@@ -1,0 +1,41 @@
+[package]
+name = "nano-backtest"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Event-driven backtesting engine with realistic latency simulation"
+
+[dependencies]
+nano-core = { path = "../nano-core" }
+nano-feed = { path = "../nano-feed" }
+nano-lob = { path = "../nano-lob" }
+nano-model = { path = "../nano-model" }
+
+thiserror.workspace = true
+anyhow.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+indexmap.workspace = true
+parking_lot.workspace = true
+
+rust_decimal.workspace = true
+ordered-float.workspace = true
+statrs.workspace = true
+rand.workspace = true
+rand_distr.workspace = true
+
+chrono.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+approx.workspace = true
+tempfile = "3.9"
+
+[[bench]]
+name = "backtest"
+harness = false
+

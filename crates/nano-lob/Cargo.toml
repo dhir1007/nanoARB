@@ -1,0 +1,39 @@
+[package]
+name = "nano-lob"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Limit Order Book reconstruction and feature extraction"
+
+[dependencies]
+nano-core = { path = "../nano-core" }
+nano-feed = { path = "../nano-feed" }
+
+thiserror.workspace = true
+anyhow.workspace = true
+
+serde.workspace = true
+indexmap.workspace = true
+smallvec.workspace = true
+parking_lot.workspace = true
+
+rust_decimal.workspace = true
+ordered-float.workspace = true
+ndarray.workspace = true
+
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+approx.workspace = true
+
+[[bench]]
+name = "orderbook"
+harness = false
+
+[[bench]]
+name = "features"
+harness = false
+

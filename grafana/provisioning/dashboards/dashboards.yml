@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'NanoARB'
+    orgId: 1
+    folder: 'NanoARB'
+    folderUid: 'nanoarb'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
+

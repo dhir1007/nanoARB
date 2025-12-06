@@ -1,0 +1,109 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/nano-core",
+    "crates/nano-feed",
+    "crates/nano-lob",
+    "crates/nano-model",
+    "crates/nano-backtest",
+    "crates/nano-strategy",
+    "crates/nano-gateway",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["NanoARB Contributors"]
+license = "MIT"
+repository = "https://github.com/yourusername/nanoARB"
+readme = "README.md"
+keywords = ["hft", "trading", "market-making", "arbitrage", "low-latency"]
+categories = ["finance", "algorithms"]
+
+[workspace.dependencies]
+# Core utilities
+thiserror = "1.0.50"
+anyhow = "1.0.75"
+derive_more = "0.99.17"
+static_assertions = "1.1"
+
+# Pin problematic transitive dependencies
+base64ct = "=1.6.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+rkyv = { version = "0.7.42", features = ["validation", "strict"] }
+
+# Numeric types
+rust_decimal = { version = "1.33", features = ["serde", "maths"] }
+rust_decimal_macros = "1.33"
+ordered-float = { version = "4.2", features = ["serde"] }
+
+# Data structures
+indexmap = { version = "2.1", features = ["serde"] }
+dashmap = "5.5"
+parking_lot = "0.12"
+crossbeam = "0.8"
+crossbeam-channel = "0.5"
+smallvec = { version = "1.11", features = ["serde"] }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full", "tracing"] }
+futures = "0.3"
+
+# Parsing
+nom = "7.1"
+zerocopy = { version = "0.7", features = ["derive"] }
+bytes = "1.5"
+
+# Logging & Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Metrics & Monitoring
+prometheus-client = "0.22"
+
+# ML Inference  
+ndarray = { version = "0.15", features = ["serde"] }
+# ort = { version = "2.0.0-rc.0", features = ["half"] } # Disabled - requires newer Rust
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+time = { version = "0.3", features = ["serde"] }
+
+# Configuration
+config = "0.14"
+toml = "0.8"
+
+# Random & Statistics
+rand = "0.8"
+rand_distr = "0.4"
+statrs = "0.16"
+
+# Testing & Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+approx = "0.5"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+opt-level = 3
+
+[profile.bench]
+lto = "thin"
+codegen-units = 1
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 2
+

@@ -1,0 +1,43 @@
+# NanoARB Configuration
+# Default configuration for Docker deployment
+
+[general]
+name = "nanoarb"
+log_level = "info"
+metrics_port = 9090
+data_dir = "/app/data"
+
+[trading]
+live_enabled = false
+symbols = ["ESH24"]
+initial_capital = 1000000.0
+max_position = 50
+max_order_size = 10
+
+[latency]
+order_latency_ns = 100000
+market_data_latency_ns = 50000
+ack_latency_ns = 100000
+jitter_ns = 10000
+use_random_jitter = true
+
+[fees]
+maker_fee = 0.25
+taker_fee = 0.85
+exchange_fee = 1.18
+clearing_fee = 0.10
+
+[risk]
+max_position = 50
+max_order_size = 20
+max_drawdown_pct = 0.06
+max_daily_loss = 100000.0
+max_open_orders = 20
+enable_kill_switch = true
+
+[execution]
+track_queue_position = true
+fill_probability_decay = 0.9
+partial_fill_probability = 0.2
+simulate_adverse_selection = true
+

@@ -1,0 +1,78 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Data files (too large for git)
+/data/raw/
+/data/processed/
+*.pcap
+*.dat
+*.bin
+!data/sample/
+
+# Model artifacts
+/models/*.onnx
+/models/*.pt
+/models/*.pth
+!models/sample/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+logs/
+
+# Benchmarks output
+/target/criterion/
+
+# Profiling
+*.svg
+perf.data
+perf.data.old
+flamegraph.svg
+
+# Docker
+.docker/
+
+# Grafana
+grafana/data/
+
+# Prometheus
+prometheus/data/
+
+# Coverage
+*.profraw
+*.profdata
+coverage/
+lcov.info
+
