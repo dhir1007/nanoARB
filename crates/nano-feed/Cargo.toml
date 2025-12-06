@@ -1,0 +1,37 @@
+[package]
+name = "nano-feed"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "CME MDP 3.0 market data feed parser and handler"
+
+[dependencies]
+nano-core = { path = "../nano-core" }
+
+thiserror.workspace = true
+anyhow.workspace = true
+
+serde.workspace = true
+bincode.workspace = true
+bytes.workspace = true
+zerocopy.workspace = true
+nom.workspace = true
+
+tokio.workspace = true
+crossbeam-channel.workspace = true
+
+tracing.workspace = true
+
+rand.workspace = true
+rand_distr.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+tempfile = "3.9"
+
+[[bench]]
+name = "parser"
+harness = false
+

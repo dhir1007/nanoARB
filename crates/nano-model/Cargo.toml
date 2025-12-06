@@ -1,0 +1,29 @@
+[package]
+name = "nano-model"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "ML model inference for trading signals"
+
+[dependencies]
+nano-core = { path = "../nano-core" }
+nano-lob = { path = "../nano-lob" }
+
+thiserror.workspace = true
+anyhow.workspace = true
+
+serde.workspace = true
+ndarray.workspace = true
+# ort.workspace = true  # Disabled - requires newer Rust
+
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+approx.workspace = true
+
+[[bench]]
+name = "inference"
+harness = false
+

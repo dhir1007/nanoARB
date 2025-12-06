@@ -1,0 +1,36 @@
+[package]
+name = "nano-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core types, traits, and utilities for the NanoARB trading engine"
+
+[dependencies]
+thiserror.workspace = true
+anyhow.workspace = true
+derive_more.workspace = true
+static_assertions.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+bincode.workspace = true
+rkyv.workspace = true
+
+rust_decimal.workspace = true
+rust_decimal_macros.workspace = true
+ordered-float.workspace = true
+
+chrono.workspace = true
+bytes.workspace = true
+zerocopy.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+approx.workspace = true
+
+[[bench]]
+name = "types"
+harness = false
+

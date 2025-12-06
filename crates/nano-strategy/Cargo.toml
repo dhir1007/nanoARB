@@ -1,0 +1,29 @@
+[package]
+name = "nano-strategy"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Trading strategies and RL market-making agent"
+
+[dependencies]
+nano-core = { path = "../nano-core" }
+nano-lob = { path = "../nano-lob" }
+nano-model = { path = "../nano-model" }
+
+thiserror.workspace = true
+anyhow.workspace = true
+
+serde.workspace = true
+ndarray.workspace = true
+
+rust_decimal.workspace = true
+ordered-float.workspace = true
+rand.workspace = true
+rand_distr.workspace = true
+
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+approx.workspace = true
