@@ -200,25 +200,39 @@ async fn run_simulation(_config: &AppConfig, metrics: &MetricsRegistry) -> anyho
     // 2. Run the strategy in real-time
     // 3. Track paper trades
 
-    // For now, just run a brief synthetic simulation
-    tracing::info!("Running brief simulation for demonstration");
+    // For now, run continuous synthetic simulation with metrics
+    tracing::info!("Running continuous simulation (press Ctrl+C to stop)");
 
     use nano_feed::synthetic::{SyntheticConfig, SyntheticGenerator};
+    use std::time::Duration;
 
     let syn_config = SyntheticConfig::es_futures();
     let mut generator = SyntheticGenerator::new(syn_config);
+    let mut iteration = 0u64;
 
-    for i in 0..1000 {
-        let _event = generator.next_event();
-
-        if i % 100 == 0 {
-            metrics.record_event(1000);
+    loop {
+        // Generate synthetic events
+        for _ in 0..100 {
+            let _event = generator.next_event();
         }
+
+        // Record metrics
+        let latency_ns = 500 + (iteration % 1000); // Simulated latency
+        metrics.record_event(latency_ns);
+        
+        iteration += 1;
+
+        // Log progress every 10 seconds
+        if iteration % 100 == 0 {
+            tracing::info!(
+                "Simulation running: {} iterations, recording metrics",
+                iteration * 100
+            );
+        }
+
+        // Sleep to simulate realistic rate (100ms between batches)
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
-
-    tracing::info!("Simulation complete");
-
-    Ok(())
 }
 
 // Helper trait extension to access base strategy

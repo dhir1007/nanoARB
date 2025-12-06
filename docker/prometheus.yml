@@ -10,7 +10,7 @@ scrape_configs:
   # NanoARB Trading Engine
   - job_name: 'nanoarb'
     static_configs:
-      - targets: ['nanoarb:9090']
+      - targets: ['host.docker.internal:9090']  # Access host machine from Docker
     scrape_interval: 1s
     metrics_path: /metrics
 
