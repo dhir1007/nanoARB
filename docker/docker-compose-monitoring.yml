@@ -1,0 +1,47 @@
+# NanoARB Monitoring Stack (Prometheus + Grafana only)
+# Run Rust app locally, just use this for dashboards
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: nanoarb-prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - nanoarb-network
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: nanoarb-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=nanoarb
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - nanoarb-network
+    depends_on:
+      - prometheus
+
+networks:
+  nanoarb-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
