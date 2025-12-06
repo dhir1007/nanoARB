@@ -214,8 +214,8 @@ impl ColoLatencyModel {
     #[must_use]
     pub fn aurora() -> Self {
         Self::new(
-            5_000,  // 5 microseconds to exchange
-            2_000,  // 2 microseconds exchange processing
+            5_000, // 5 microseconds to exchange
+            2_000, // 2 microseconds exchange processing
         )
     }
 
@@ -223,8 +223,8 @@ impl ColoLatencyModel {
     #[must_use]
     pub fn ny5() -> Self {
         Self::new(
-            50_000,  // 50 microseconds
-            5_000,   // 5 microseconds
+            50_000, // 50 microseconds
+            5_000,  // 5 microseconds
         )
     }
 
@@ -299,8 +299,11 @@ mod tests {
 
     #[test]
     fn test_jitter_models() {
-        let mut sim = LatencySimulator::from_config(&LatencyConfig::default())
-            .with_jitter_model(JitterModel::Uniform { max_jitter_ns: 1000 });
+        let mut sim = LatencySimulator::from_config(&LatencyConfig::default()).with_jitter_model(
+            JitterModel::Uniform {
+                max_jitter_ns: 1000,
+            },
+        );
 
         let t0 = Timestamp::from_nanos(0);
         let mut latencies = Vec::new();
@@ -316,4 +319,3 @@ mod tests {
         assert!(max - min > 0);
     }
 }
-

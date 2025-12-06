@@ -2,7 +2,6 @@
 """Training script for NanoARB models."""
 
 import argparse
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -287,7 +286,7 @@ def main():
             (config.data.sequence_length, config.data.num_levels * config.data.features_per_level),
             device,
         )
-        print(f"Latency (ns):")
+        print("Latency (ns):")
         print(f"  Mean: {latency['mean_ns']:.0f}")
         print(f"  Median: {latency['median_ns']:.0f}")
         print(f"  P95: {latency['p95_ns']:.0f}")

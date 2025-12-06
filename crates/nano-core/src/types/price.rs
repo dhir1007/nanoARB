@@ -25,8 +25,19 @@ use serde::{Deserialize, Serialize};
 /// let raw = Price::from_raw(50025);
 /// assert_eq!(raw.raw(), 50025);
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 pub struct Price(i64);
 
@@ -269,4 +280,3 @@ mod tests {
         assert_eq!(format!("{p}"), "500.25");
     }
 }
-

@@ -208,4 +208,3 @@ mod tests {
         fn _takes_metrics(_: &dyn MetricsCollector) {}
     }
 }
-

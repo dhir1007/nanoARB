@@ -92,4 +92,3 @@ fn bench_orderbook_operations(c: &mut Criterion) {
 
 criterion_group!(benches, bench_orderbook_operations);
 criterion_main!(benches);
-

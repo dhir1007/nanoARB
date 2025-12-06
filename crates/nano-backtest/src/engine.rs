@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use nano_core::traits::{LatencyModel, OrderBook as OrderBookTrait, Strategy};
-use nano_core::types::{Fill, Instrument, Order, OrderId, Price, Timestamp};
+use nano_core::types::{Fill, Instrument, Order, Price, Timestamp};
 use nano_lob::OrderBook;
 
 use crate::config::BacktestConfig;
@@ -132,13 +132,13 @@ impl BacktestEngine {
                 self.on_market_data(*instrument_id, strategy);
             }
             EventType::OrderSubmit { order } => {
-                self.on_order_submit(order.clone());
+                self.on_order_submit(*order);
             }
             EventType::OrderAck { order_id } => {
                 strategy.on_order_ack(*order_id);
             }
             EventType::OrderFill { fill } => {
-                self.on_fill(fill.clone(), strategy);
+                self.on_fill(*fill, strategy);
             }
             EventType::OrderCancel { order_id } => {
                 strategy.on_order_cancel(*order_id);
@@ -146,7 +146,10 @@ impl BacktestEngine {
             EventType::OrderReject { order_id, reason } => {
                 strategy.on_order_reject(*order_id, reason);
             }
-            EventType::Timer { timer_id: _, data: _ } => {
+            EventType::Timer {
+                timer_id: _,
+                data: _,
+            } => {
                 // Timer events can be handled by strategy
             }
             EventType::Signal { name: _, value: _ } => {
@@ -240,7 +243,8 @@ impl BacktestEngine {
         // Get instrument ID from order (simplified - in practice would track this)
         let instrument_id = 1; // Default
 
-        self.positions.apply_fill_for_instrument(instrument_id, &fill);
+        self.positions
+            .apply_fill_for_instrument(instrument_id, &fill);
         self.metrics.record_fill(&fill);
         self.risk.on_order_complete();
 
@@ -248,7 +252,8 @@ impl BacktestEngine {
 
         // Record equity point
         let total_pnl = self.positions.total_pnl(&self.current_prices);
-        self.stats.add_equity_point(self.current_time.as_nanos(), total_pnl);
+        self.stats
+            .add_equity_point(self.current_time.as_nanos(), total_pnl);
     }
 
     /// Run the backtest with a strategy
@@ -279,7 +284,10 @@ impl BacktestEngine {
 
         let mut processed = 0;
 
-        while processed < max_events && !self.event_queue.is_empty() && self.state == EngineState::Running {
+        while processed < max_events
+            && !self.event_queue.is_empty()
+            && self.state == EngineState::Running
+        {
             if let Some(event) = self.event_queue.pop() {
                 self.process_event(event, strategy);
                 processed += 1;
@@ -304,7 +312,8 @@ impl BacktestEngine {
             }
         }
 
-        self.stats.calculate(self.config.initial_capital, self.metrics.max_drawdown_pct);
+        self.stats
+            .calculate(self.config.initial_capital, self.metrics.max_drawdown_pct);
     }
 
     /// Get current state
@@ -405,12 +414,8 @@ mod tests {
         let config = BacktestConfig::default();
         let mut engine = BacktestEngine::new(config);
 
-        engine.schedule_event(
-            Timestamp::from_nanos(1_000_000),
-            EventType::EndOfData,
-        );
+        engine.schedule_event(Timestamp::from_nanos(1_000_000), EventType::EndOfData);
 
         assert_eq!(engine.pending_events(), 1);
     }
 }
-

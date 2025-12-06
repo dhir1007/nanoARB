@@ -107,8 +107,8 @@ async fn run_backtest(
     use nano_backtest::engine::BacktestEngine;
     use nano_core::types::Instrument;
     use nano_feed::synthetic::{SyntheticConfig, SyntheticGenerator};
-    use nano_strategy::market_maker::{MarketMakerConfig, MarketMakerStrategy};
     use nano_strategy::base::StrategyState;
+    use nano_strategy::market_maker::{MarketMakerConfig, MarketMakerStrategy};
 
     tracing::info!("Initializing backtest engine");
 
@@ -177,7 +177,10 @@ async fn run_backtest(
     tracing::info!("Backtest completed in {:?}", duration);
     tracing::info!("Events processed: {}", engine.events_processed());
     tracing::info!("Total P&L: ${:.2}", metrics_result.total_pnl);
-    tracing::info!("Max Drawdown: {:.2}%", metrics_result.max_drawdown_pct * 100.0);
+    tracing::info!(
+        "Max Drawdown: {:.2}%",
+        metrics_result.max_drawdown_pct * 100.0
+    );
     tracing::info!("Sharpe Ratio: {:.2}", stats.sharpe_ratio);
     tracing::info!("Win Rate: {:.2}%", metrics_result.win_rate() * 100.0);
     tracing::info!("Profit Factor: {:.2}", metrics_result.profit_factor());
@@ -189,10 +192,7 @@ async fn run_backtest(
 }
 
 /// Run simulation (paper trading)
-async fn run_simulation(
-    config: &AppConfig,
-    metrics: &MetricsRegistry,
-) -> anyhow::Result<()> {
+async fn run_simulation(_config: &AppConfig, metrics: &MetricsRegistry) -> anyhow::Result<()> {
     tracing::info!("Starting simulation mode");
 
     // In a full implementation, this would:
@@ -232,4 +232,3 @@ impl MarketMakerStrategyExt for nano_strategy::market_maker::MarketMakerStrategy
         unsafe { &mut *(self as *mut _ as *mut nano_strategy::base::BaseStrategy) }
     }
 }
-

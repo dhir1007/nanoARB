@@ -1,8 +1,8 @@
 //! Feature preprocessing for ML models.
 
-use ndarray::{Array1, Array2, Array3};
 use nano_core::constants::{FEATURE_LEVELS, FIELDS_PER_LEVEL};
 use nano_lob::{LobSnapshot, OrderBook, SnapshotRingBuffer};
+use ndarray::{Array2, Array3};
 use serde::{Deserialize, Serialize};
 
 /// Feature preprocessor for LOB data
@@ -76,19 +76,22 @@ impl FeaturePreprocessor {
         let mut sums = vec![0.0f64; n_features];
         for sample in data {
             for (i, &val) in sample.iter().enumerate() {
-                sums[i % n_features] += val as f64;
+                sums[i % n_features] += f64::from(val);
             }
         }
 
-        let total_rows: usize = data.iter().map(|d| d.nrows()).sum();
-        self.means = sums.iter().map(|s| (*s / total_rows as f64) as f32).collect();
+        let total_rows: usize = data.iter().map(ndarray::ArrayBase::nrows).sum();
+        self.means = sums
+            .iter()
+            .map(|s| (*s / total_rows as f64) as f32)
+            .collect();
 
         // Calculate standard deviations
         let mut sq_diffs = vec![0.0f64; n_features];
         for sample in data {
             for (i, &val) in sample.iter().enumerate() {
                 let idx = i % n_features;
-                let diff = val as f64 - self.means[idx] as f64;
+                let diff = f64::from(val) - f64::from(self.means[idx]);
                 sq_diffs[idx] += diff * diff;
             }
         }
@@ -228,7 +231,7 @@ impl OnlineStatistics {
                 break;
             }
 
-            let val = val as f64;
+            let val = f64::from(val);
             let delta = val - self.means[i];
             self.means[i] += delta / n;
             let delta2 = val - self.means[i];
@@ -320,4 +323,3 @@ mod tests {
         assert_eq!(shape.2, FIELDS_PER_LEVEL);
     }
 }
-

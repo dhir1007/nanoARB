@@ -1,7 +1,7 @@
 //! Base strategy implementation.
 
 use nano_core::traits::{OrderBook, Strategy};
-use nano_core::types::{Fill, Order, OrderId, Price, Quantity, Side, Timestamp};
+use nano_core::types::{Fill, Order, OrderId, Price, Side};
 use serde::{Deserialize, Serialize};
 
 /// Strategy state
@@ -79,16 +79,20 @@ impl BaseStrategy {
 
     /// Update position from a fill
     pub fn update_position(&mut self, fill: &Fill) {
-        let fill_qty = fill.quantity.value() as i64;
-        let signed_qty = if fill.side == Side::Buy { fill_qty } else { -fill_qty };
+        let fill_qty = i64::from(fill.quantity.value());
+        let signed_qty = if fill.side == Side::Buy {
+            fill_qty
+        } else {
+            -fill_qty
+        };
         let fill_price = fill.price.raw();
 
         self.fill_count += 1;
         self.total_fees += fill.fee;
 
         // Check if adding to or reducing position
-        let same_direction = (self.position >= 0 && signed_qty > 0)
-            || (self.position <= 0 && signed_qty < 0);
+        let same_direction =
+            (self.position >= 0 && signed_qty > 0) || (self.position <= 0 && signed_qty < 0);
 
         if same_direction || self.position == 0 {
             // Adding to position
@@ -241,6 +245,7 @@ impl Strategy for BaseStrategy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nano_core::types::{Price, Quantity, Timestamp};
 
     fn create_fill(side: Side, price: i64, qty: u32, fee: f64) -> Fill {
         Fill {
@@ -289,4 +294,3 @@ mod tests {
         assert!((strategy.unrealized_pnl - 25.0).abs() < 0.1);
     }
 }
-

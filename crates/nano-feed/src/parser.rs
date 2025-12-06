@@ -8,7 +8,10 @@ use nom::{
 };
 
 use crate::error::{FeedError, FeedResult};
-use crate::messages::*;
+use crate::messages::{
+    BookEntry, BookUpdate, ChannelReset, EntryType, MdpHeader, MdpMessage, SecurityStatus,
+    Snapshot, SnapshotEntry, TradeEntry, TradeUpdate, UpdateAction,
+};
 
 /// CME MDP 3.0 parser
 #[derive(Debug, Default)]
@@ -384,4 +387,3 @@ mod tests {
         assert!(!parser.initialized);
     }
 }
-

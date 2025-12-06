@@ -1,4 +1,4 @@
-//! Error types for the NanoARB trading engine.
+//! Error types for the `NanoARB` trading engine.
 
 use thiserror::Error;
 
@@ -107,4 +107,3 @@ mod tests {
         assert!(err.to_string().contains("Insufficient liquidity"));
     }
 }
-

@@ -14,7 +14,7 @@ fn create_test_book(price_base: i64) -> OrderBook {
             vec![
                 BookEntry {
                     price: price_base - (i as i64 * 10),
-                    quantity: 100 + (i as i32 * 10),
+                    quantity: 100 + (i * 10),
                     num_orders: 5,
                     price_level: (i + 1) as u8,
                     action: UpdateAction::New,
@@ -22,7 +22,7 @@ fn create_test_book(price_base: i64) -> OrderBook {
                 },
                 BookEntry {
                     price: price_base + (i as i64 * 10) + 10,
-                    quantity: 100 + (i as i32 * 10),
+                    quantity: 100 + (i * 10),
                     num_orders: 5,
                     price_level: (i + 1) as u8,
                     action: UpdateAction::New,
@@ -120,4 +120,3 @@ fn bench_snapshot_operations(c: &mut Criterion) {
 
 criterion_group!(benches, bench_feature_extraction, bench_snapshot_operations);
 criterion_main!(benches);
-

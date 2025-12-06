@@ -9,8 +9,6 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
 use crate::config::{ExecutionConfig, FeeConfig};
-use crate::events::{Event, EventQueue, EventType};
-use crate::latency::LatencySimulator;
 
 /// Fill simulation result
 #[derive(Debug, Clone)]
@@ -83,16 +81,13 @@ impl SimulatedExchange {
     }
 
     /// Try to fill orders against the book
-    pub fn match_orders(
-        &mut self,
-        book: &OrderBook,
-        timestamp: Timestamp,
-    ) -> Vec<FillResult> {
+    pub fn match_orders(&mut self, book: &OrderBook, timestamp: Timestamp) -> Vec<FillResult> {
         let mut fills = Vec::new();
         let mut completed_orders = Vec::new();
 
         // Collect active order IDs first to avoid borrow conflict
-        let active_order_ids: Vec<OrderId> = self.orders
+        let active_order_ids: Vec<OrderId> = self
+            .orders
             .iter()
             .filter(|(_, o)| o.status.is_active())
             .map(|(id, _)| *id)
@@ -105,8 +100,8 @@ impl SimulatedExchange {
                     Some(o) => o,
                     None => continue,
                 };
-                
-                (order.clone(), order.remaining_quantity(), order.side, order.price)
+
+                (*order, order.remaining_quantity(), order.side, order.price)
             };
 
             // Try to fill
@@ -135,7 +130,12 @@ impl SimulatedExchange {
     }
 
     /// Try to fill a single order
-    fn try_fill_order(&mut self, order: &Order, book: &OrderBook, timestamp: Timestamp) -> Option<FillResult> {
+    fn try_fill_order(
+        &mut self,
+        order: &Order,
+        book: &OrderBook,
+        timestamp: Timestamp,
+    ) -> Option<FillResult> {
         let remaining = order.remaining_quantity();
         if remaining.is_zero() {
             return None;
@@ -169,7 +169,9 @@ impl SimulatedExchange {
         };
 
         // Check adverse selection
-        if self.config.simulate_adverse_selection && self.rng.gen::<f64>() < self.config.adverse_selection_prob {
+        if self.config.simulate_adverse_selection
+            && self.rng.gen::<f64>() < self.config.adverse_selection_prob
+        {
             // Adverse selection: market moved against us, no fill
             return None;
         }
@@ -228,7 +230,10 @@ impl SimulatedExchange {
     /// Get number of active orders
     #[must_use]
     pub fn active_order_count(&self) -> usize {
-        self.orders.values().filter(|o| o.status.is_active()).count()
+        self.orders
+            .values()
+            .filter(|o| o.status.is_active())
+            .count()
     }
 
     /// Reset the exchange state
@@ -272,12 +277,7 @@ impl FillSimulator {
 
     /// Estimate fill probability based on order and market conditions
     #[must_use]
-    pub fn fill_probability(
-        &self,
-        order: &Order,
-        book: &OrderBook,
-        queue_position: usize,
-    ) -> f64 {
+    pub fn fill_probability(&self, order: &Order, book: &OrderBook, queue_position: usize) -> f64 {
         let queue_factor = self.queue_decay.powi(queue_position as i32);
 
         // Check distance from BBO
@@ -338,7 +338,10 @@ impl FillSimulator {
             }
         };
 
-        let fill_qty = order.remaining_quantity().value().min(available_qty.value());
+        let fill_qty = order
+            .remaining_quantity()
+            .value()
+            .min(available_qty.value());
         if fill_qty == 0 {
             return None;
         }
@@ -421,10 +424,7 @@ mod tests {
 
     #[test]
     fn test_submit_order() {
-        let mut exchange = SimulatedExchange::new(
-            FeeConfig::default(),
-            ExecutionConfig::default(),
-        );
+        let mut exchange = SimulatedExchange::new(FeeConfig::default(), ExecutionConfig::default());
 
         let order = create_test_order(Side::Buy, 50010, 10);
         let order_id = exchange.submit_order(order, Timestamp::now());
@@ -460,10 +460,7 @@ mod tests {
 
     #[test]
     fn test_cancel_order() {
-        let mut exchange = SimulatedExchange::new(
-            FeeConfig::default(),
-            ExecutionConfig::default(),
-        );
+        let mut exchange = SimulatedExchange::new(FeeConfig::default(), ExecutionConfig::default());
 
         let order = create_test_order(Side::Buy, 49990, 10);
         let order_id = exchange.submit_order(order, Timestamp::now());
@@ -474,4 +471,3 @@ mod tests {
         assert!(exchange.get_order(order_id).is_none());
     }
 }
-

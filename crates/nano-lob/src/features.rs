@@ -67,7 +67,10 @@ impl LobFeatureExtractor {
     /// Create with custom tick size and quantity scale
     #[must_use]
     pub fn with_params(tick_size: f64, qty_scale: f64) -> Self {
-        Self { tick_size, qty_scale }
+        Self {
+            tick_size,
+            qty_scale,
+        }
     }
 
     /// Extract all features from an order book
@@ -82,8 +85,8 @@ impl LobFeatureExtractor {
         if let (Some((bid_price, bid_qty)), Some((ask_price, ask_qty))) = (best_bid, best_ask) {
             let bid = bid_price.as_f64();
             let ask = ask_price.as_f64();
-            let bid_q = bid_qty.value() as f64;
-            let ask_q = ask_qty.value() as f64;
+            let bid_q = f64::from(bid_qty.value());
+            let ask_q = f64::from(ask_qty.value());
 
             features.best_bid = bid;
             features.best_ask = ask;
@@ -110,7 +113,7 @@ impl LobFeatureExtractor {
 
         for i in 0..FEATURE_LEVELS {
             if let Some(level) = book.bid_level(i) {
-                let qty = level.quantity.value() as f64;
+                let qty = f64::from(level.quantity.value());
                 features.bid_levels[i] = qty / self.qty_scale;
                 total_bid_depth += qty;
                 features.bid_cumulative[i] = total_bid_depth / self.qty_scale;
@@ -121,7 +124,7 @@ impl LobFeatureExtractor {
             }
 
             if let Some(level) = book.ask_level(i) {
-                let qty = level.quantity.value() as f64;
+                let qty = f64::from(level.quantity.value());
                 features.ask_levels[i] = qty / self.qty_scale;
                 total_ask_depth += qty;
                 features.ask_cumulative[i] = total_ask_depth / self.qty_scale;
@@ -159,8 +162,8 @@ impl LobFeatureExtractor {
 
         let bid = bid_price.as_f64();
         let ask = ask_price.as_f64();
-        let bid_q = bid_qty.value() as f64;
-        let ask_q = ask_qty.value() as f64;
+        let bid_q = f64::from(bid_qty.value());
+        let ask_q = f64::from(ask_qty.value());
 
         let total = bid_q + ask_q;
         if total > 0.0 {
@@ -182,13 +185,13 @@ impl LobFeatureExtractor {
             let weight = 1.0 / (i as f64 + 1.0);
 
             if let Some(level) = book.bid_level(i) {
-                let qty = level.quantity.value() as f64;
+                let qty = f64::from(level.quantity.value());
                 bid_sum += level.price.as_f64() * qty * weight;
                 bid_weight_sum += qty * weight;
             }
 
             if let Some(level) = book.ask_level(i) {
-                let qty = level.quantity.value() as f64;
+                let qty = f64::from(level.quantity.value());
                 ask_sum += level.price.as_f64() * qty * weight;
                 ask_weight_sum += qty * weight;
             }
@@ -205,8 +208,8 @@ impl LobFeatureExtractor {
     /// Calculate book imbalance at a given depth
     #[must_use]
     pub fn book_imbalance(&self, book: &OrderBook, levels: usize) -> f64 {
-        let bid_qty = book.total_bid_quantity(levels).value() as f64;
-        let ask_qty = book.total_ask_quantity(levels).value() as f64;
+        let bid_qty = f64::from(book.total_bid_quantity(levels).value());
+        let ask_qty = f64::from(book.total_ask_quantity(levels).value());
 
         let total = bid_qty + ask_qty;
         if total > 0.0 {
@@ -218,11 +221,7 @@ impl LobFeatureExtractor {
 
     /// Calculate Order Flow Imbalance (OFI) from consecutive book states
     #[must_use]
-    pub fn order_flow_imbalance(
-        &self,
-        prev_book: &OrderBook,
-        curr_book: &OrderBook,
-    ) -> f64 {
+    pub fn order_flow_imbalance(&self, prev_book: &OrderBook, curr_book: &OrderBook) -> f64 {
         let prev_bid = prev_book.best_bid();
         let prev_ask = prev_book.best_ask();
         let curr_bid = curr_book.best_bid();
@@ -234,13 +233,13 @@ impl LobFeatureExtractor {
         if let (Some((prev_bp, prev_bq)), Some((curr_bp, curr_bq))) = (prev_bid, curr_bid) {
             if curr_bp > prev_bp {
                 // Bid price improved
-                ofi += curr_bq.value() as f64;
+                ofi += f64::from(curr_bq.value());
             } else if curr_bp < prev_bp {
                 // Bid price worsened
-                ofi -= prev_bq.value() as f64;
+                ofi -= f64::from(prev_bq.value());
             } else {
                 // Same price, quantity change
-                ofi += (curr_bq.value() as i64 - prev_bq.value() as i64) as f64;
+                ofi += (i64::from(curr_bq.value()) - i64::from(prev_bq.value())) as f64;
             }
         }
 
@@ -248,13 +247,13 @@ impl LobFeatureExtractor {
         if let (Some((prev_ap, prev_aq)), Some((curr_ap, curr_aq))) = (prev_ask, curr_ask) {
             if curr_ap < prev_ap {
                 // Ask price improved (lower)
-                ofi -= curr_aq.value() as f64;
+                ofi -= f64::from(curr_aq.value());
             } else if curr_ap > prev_ap {
                 // Ask price worsened (higher)
-                ofi += prev_aq.value() as f64;
+                ofi += f64::from(prev_aq.value());
             } else {
                 // Same price, quantity change
-                ofi -= (curr_aq.value() as i64 - prev_aq.value() as i64) as f64;
+                ofi -= (i64::from(curr_aq.value()) - i64::from(prev_aq.value())) as f64;
             }
         }
 
@@ -307,7 +306,7 @@ pub struct VpinCalculator {
     current_buy_volume: u32,
     /// Current bucket sell volume
     current_sell_volume: u32,
-    /// Historical buckets (buy_volume, sell_volume)
+    /// Historical buckets (`buy_volume`, `sell_volume`)
     buckets: Vec<(u32, u32)>,
 }
 
@@ -337,7 +336,8 @@ impl VpinCalculator {
         // Check if bucket is complete
         let total = self.current_buy_volume + self.current_sell_volume;
         if total >= self.bucket_size {
-            self.buckets.push((self.current_buy_volume, self.current_sell_volume));
+            self.buckets
+                .push((self.current_buy_volume, self.current_sell_volume));
 
             // Keep only last N buckets
             if self.buckets.len() > self.num_buckets {
@@ -360,8 +360,8 @@ impl VpinCalculator {
         let mut total_volume = 0.0;
 
         for (buy, sell) in &self.buckets {
-            let buy_f = *buy as f64;
-            let sell_f = *sell as f64;
+            let buy_f = f64::from(*buy);
+            let sell_f = f64::from(*sell);
             abs_imbalance_sum += (buy_f - sell_f).abs();
             total_volume += buy_f + sell_f;
         }
@@ -411,7 +411,7 @@ impl TradeFlowTracker {
 
     /// Record a trade
     pub fn record_trade(&mut self, quantity: Quantity, is_buy: bool, timestamp: Timestamp) {
-        let qty = quantity.value() as u64;
+        let qty = u64::from(quantity.value());
 
         if is_buy {
             self.buy_volume += qty;
@@ -531,7 +531,7 @@ mod tests {
         let mut vpin = VpinCalculator::new(100, 10);
 
         // Add some trades
-        vpin.add_trade(Quantity::new(60), true);  // buy
+        vpin.add_trade(Quantity::new(60), true); // buy
         vpin.add_trade(Quantity::new(40), false); // sell - bucket complete
 
         assert_eq!(vpin.bucket_count(), 1);
@@ -564,4 +564,3 @@ mod tests {
         assert!(features.imbalance_l1 > 0.0); // More bid than ask at L1
     }
 }
-

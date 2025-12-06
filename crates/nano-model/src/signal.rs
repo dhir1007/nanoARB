@@ -196,14 +196,23 @@ impl SignalGenerator {
     }
 
     /// Generate signal from model prediction
-    pub fn generate(&mut self, prediction: &Prediction, timestamp: Timestamp, current_price: Price) -> Signal {
+    pub fn generate(
+        &mut self,
+        prediction: &Prediction,
+        timestamp: Timestamp,
+        current_price: Price,
+    ) -> Signal {
         // Get direction and confidence
         let (direction, confidence) = if self.config.ensemble_horizons {
             // Average across horizons
-            let avg_dir: f32 = prediction.directions.iter().map(|&d| d as f32).sum::<f32>()
+            let avg_dir: f32 = prediction
+                .directions
+                .iter()
+                .map(|&d| f32::from(d))
+                .sum::<f32>()
                 / prediction.directions.len() as f32;
-            let avg_conf: f32 = prediction.confidences.iter().sum::<f32>()
-                / prediction.confidences.len() as f32;
+            let avg_conf: f32 =
+                prediction.confidences.iter().sum::<f32>() / prediction.confidences.len() as f32;
 
             let dir = if avg_dir > 0.5 {
                 1i8
@@ -216,7 +225,10 @@ impl SignalGenerator {
             (dir, avg_conf)
         } else {
             // Use primary horizon
-            (prediction.primary_direction(), prediction.primary_confidence())
+            (
+                prediction.primary_direction(),
+                prediction.primary_confidence(),
+            )
         };
 
         // Check thresholds
@@ -237,11 +249,12 @@ impl SignalGenerator {
         };
 
         // Calculate strength (normalized confidence above threshold)
-        let strength = (confidence - self.config.min_confidence) / (1.0 - self.config.min_confidence);
+        let strength =
+            (confidence - self.config.min_confidence) / (1.0 - self.config.min_confidence);
 
         // Calculate target and stop prices
-        let target_delta = self.config.target_ticks * direction as i64;
-        let stop_delta = -self.config.stop_ticks * direction as i64;
+        let target_delta = self.config.target_ticks * i64::from(direction);
+        let stop_delta = -self.config.stop_ticks * i64::from(direction);
 
         let target_price = Price::from_raw(current_price.raw() + target_delta);
         let stop_price = Price::from_raw(current_price.raw() + stop_delta);
@@ -387,11 +400,7 @@ mod tests {
             latency_ns: 100,
         };
 
-        let signal = generator.generate(
-            &prediction,
-            Timestamp::now(),
-            Price::from_raw(50000),
-        );
+        let signal = generator.generate(&prediction, Timestamp::now(), Price::from_raw(50000));
 
         assert!(signal.is_buy());
         assert!(signal.confidence >= 0.5);
@@ -418,4 +427,3 @@ mod tests {
         assert!(result3.is_some());
     }
 }
-

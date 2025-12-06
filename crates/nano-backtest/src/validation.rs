@@ -101,6 +101,7 @@ impl WalkForwardAnalysis {
     }
 
     /// Generate time splits for walk-forward analysis
+    #[must_use]
     pub fn generate_splits(&self) -> Vec<TimeSplit> {
         let mut splits = Vec::new();
         let mut current = self.data_start.as_nanos();
@@ -108,8 +109,11 @@ impl WalkForwardAnalysis {
 
         let mut index = 0;
 
-        while current + self.config.train_window_ns + self.config.purge_gap_ns
-            + self.config.test_window_ns <= end
+        while current
+            + self.config.train_window_ns
+            + self.config.purge_gap_ns
+            + self.config.test_window_ns
+            <= end
         {
             let train_start = Timestamp::from_nanos(current);
             let train_end = Timestamp::from_nanos(current + self.config.train_window_ns);
@@ -117,7 +121,9 @@ impl WalkForwardAnalysis {
                 current + self.config.train_window_ns + self.config.purge_gap_ns,
             );
             let test_end = Timestamp::from_nanos(
-                current + self.config.train_window_ns + self.config.purge_gap_ns
+                current
+                    + self.config.train_window_ns
+                    + self.config.purge_gap_ns
                     + self.config.test_window_ns,
             );
 
@@ -164,6 +170,7 @@ impl PurgedKFold {
     }
 
     /// Generate train/test indices for each fold
+    #[must_use]
     pub fn split(&self, n_samples: usize) -> Vec<(Vec<usize>, Vec<usize>)> {
         let fold_size = n_samples / self.n_splits;
         let mut folds = Vec::with_capacity(self.n_splits);
@@ -261,6 +268,7 @@ impl CombinatorialPurgedCV {
     }
 
     /// Generate train/test indices for each combination
+    #[must_use]
     pub fn split(&self, n_samples: usize) -> Vec<(Vec<usize>, Vec<usize>)> {
         let group_size = n_samples / self.n_groups;
         let combinations = self.combinations();
@@ -282,7 +290,10 @@ impl CombinatorialPurgedCV {
                 .collect();
 
             // Test indices
-            let test_indices: Vec<usize> = test_ranges.iter().flat_map(|r| r.clone()).collect();
+            let test_indices: Vec<usize> = test_ranges
+                .iter()
+                .flat_map(std::clone::Clone::clone)
+                .collect();
 
             // Train indices with purge and embargo around each test range
             let train_indices: Vec<usize> = (0..n_samples)
@@ -475,4 +486,3 @@ mod tests {
         assert!(results.prob_overfit > 0.0);
     }
 }
-

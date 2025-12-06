@@ -26,4 +26,3 @@ fn bench_event_scheduling(c: &mut Criterion) {
 
 criterion_group!(benches, bench_event_scheduling);
 criterion_main!(benches);
-

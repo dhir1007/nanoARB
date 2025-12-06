@@ -7,12 +7,24 @@ use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 /// Order/Trade side (Buy or Sell)
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Side {
     /// Buy side (bid)
+    #[default]
     Buy = 0,
     /// Sell side (ask/offer)
     Sell = 1,
@@ -102,12 +114,6 @@ impl Not for Side {
     }
 }
 
-impl Default for Side {
-    fn default() -> Self {
-        Side::Buy
-    }
-}
-
 impl fmt::Debug for Side {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -172,4 +178,3 @@ mod tests {
         assert_eq!(format!("{}", Side::Sell), "SELL");
     }
 }
-

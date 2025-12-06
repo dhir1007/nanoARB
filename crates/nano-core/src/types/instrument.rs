@@ -6,12 +6,24 @@ use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 /// Exchange identifier
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Exchange {
     /// CME Group
+    #[default]
     CME = 0,
     /// NASDAQ
     NASDAQ = 1,
@@ -23,12 +35,6 @@ pub enum Exchange {
     ICE = 4,
     /// Simulated/Paper trading
     Simulated = 255,
-}
-
-impl Default for Exchange {
-    fn default() -> Self {
-        Exchange::CME
-    }
 }
 
 impl fmt::Debug for Exchange {
@@ -51,12 +57,24 @@ impl fmt::Display for Exchange {
 }
 
 /// Instrument type
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[archive(check_bytes)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum InstrumentType {
     /// Futures contract
+    #[default]
     Future = 0,
     /// Equity (stock)
     Equity = 1,
@@ -68,12 +86,6 @@ pub enum InstrumentType {
     Forex = 4,
     /// Cryptocurrency (for completeness)
     Crypto = 5,
-}
-
-impl Default for InstrumentType {
-    fn default() -> Self {
-        InstrumentType::Future
-    }
 }
 
 impl fmt::Debug for InstrumentType {
@@ -96,8 +108,7 @@ impl fmt::Display for InstrumentType {
 }
 
 /// Tradable instrument definition
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
-#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[archive(check_bytes)]
 pub struct Instrument {
     /// Unique instrument ID (internal)
@@ -135,7 +146,7 @@ impl Instrument {
             symbol: symbol.to_string(),
             exchange: Exchange::CME,
             instrument_type: InstrumentType::Future,
-            tick_size: 25, // 0.25 points represented as 25 (2 decimal places)
+            tick_size: 25,    // 0.25 points represented as 25 (2 decimal places)
             tick_value: 1250, // $12.50 per tick
             multiplier: 50.0,
             maker_fee: 0.25,
@@ -154,7 +165,7 @@ impl Instrument {
             symbol: symbol.to_string(),
             exchange: Exchange::CME,
             instrument_type: InstrumentType::Future,
-            tick_size: 25, // 0.25 points
+            tick_size: 25,   // 0.25 points
             tick_value: 500, // $5.00 per tick
             multiplier: 20.0,
             maker_fee: 0.25,
@@ -173,7 +184,7 @@ impl Instrument {
             symbol: symbol.to_string(),
             exchange: Exchange::NASDAQ,
             instrument_type: InstrumentType::Equity,
-            tick_size: 1, // $0.01
+            tick_size: 1,  // $0.01
             tick_value: 1, // $0.01 per share per tick
             multiplier: 1.0,
             maker_fee: 0.0,
@@ -187,21 +198,21 @@ impl Instrument {
     /// Convert price in raw ticks to display price
     #[must_use]
     pub fn ticks_to_price(&self, ticks: i64) -> f64 {
-        let divisor = 10_f64.powi(self.price_decimals as i32);
+        let divisor = 10_f64.powi(i32::from(self.price_decimals));
         (ticks as f64 * self.tick_size as f64) / divisor
     }
 
     /// Convert display price to raw ticks
     #[must_use]
     pub fn price_to_ticks(&self, price: f64) -> i64 {
-        let divisor = 10_f64.powi(self.price_decimals as i32);
+        let divisor = 10_f64.powi(i32::from(self.price_decimals));
         ((price * divisor) / self.tick_size as f64).round() as i64
     }
 
     /// Calculate P&L for a given number of ticks
     #[must_use]
     pub fn pnl_for_ticks(&self, ticks: i64, quantity: u32) -> f64 {
-        (ticks as f64 * self.tick_value as f64 * quantity as f64) / 100.0
+        (ticks as f64 * self.tick_value as f64 * f64::from(quantity)) / 100.0
     }
 
     /// Calculate total fee for a trade
@@ -212,7 +223,7 @@ impl Instrument {
         } else {
             self.taker_fee
         };
-        fee_per_contract * quantity as f64
+        fee_per_contract * f64::from(quantity)
     }
 }
 
@@ -277,4 +288,3 @@ mod tests {
         assert!((taker_fee - 8.50).abs() < 0.01);
     }
 }
-

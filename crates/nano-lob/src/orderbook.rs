@@ -24,7 +24,12 @@ pub struct BookLevel {
 impl BookLevel {
     /// Create a new book level
     #[must_use]
-    pub const fn new(price: Price, quantity: Quantity, order_count: u32, timestamp: Timestamp) -> Self {
+    pub const fn new(
+        price: Price,
+        quantity: Quantity,
+        order_count: u32,
+        timestamp: Timestamp,
+    ) -> Self {
         Self {
             price,
             quantity,
@@ -135,7 +140,11 @@ impl OrderBook {
         let order_count = entry.num_orders.max(0) as u32;
 
         let is_bid = matches!(entry.entry_type, EntryType::Bid | EntryType::ImpliedBid);
-        let book_side = if is_bid { &mut self.bids } else { &mut self.asks };
+        let book_side = if is_bid {
+            &mut self.bids
+        } else {
+            &mut self.asks
+        };
 
         match entry.action {
             UpdateAction::New | UpdateAction::Change | UpdateAction::Overlay => {
@@ -288,6 +297,7 @@ impl OrderBook {
     }
 
     /// Calculate volume-weighted average price for a given quantity
+    #[must_use]
     pub fn vwap(&self, side: Side, quantity: Quantity) -> Option<Price> {
         let levels: Vec<_> = match side {
             Side::Buy => self.ask_levels().collect(),
@@ -303,13 +313,13 @@ impl OrderBook {
                 break;
             }
             let fill_qty = remaining.min(level.quantity.value());
-            total_value += level.price.raw() * fill_qty as i64;
+            total_value += level.price.raw() * i64::from(fill_qty);
             total_qty += fill_qty;
             remaining -= fill_qty;
         }
 
         if total_qty > 0 {
-            Some(Price::from_raw(total_value / total_qty as i64))
+            Some(Price::from_raw(total_value / i64::from(total_qty)))
         } else {
             None
         }
@@ -318,7 +328,10 @@ impl OrderBook {
 
 impl OrderBookTrait for OrderBook {
     fn best_bid(&self) -> Option<(Price, Quantity)> {
-        self.bids.values().rev().next().map(|l| (l.price, l.quantity))
+        self.bids
+            .values()
+            .next_back()
+            .map(|l| (l.price, l.quantity))
     }
 
     fn best_ask(&self) -> Option<(Price, Quantity)> {
@@ -327,34 +340,28 @@ impl OrderBookTrait for OrderBook {
 
     fn mid_price(&self) -> Option<Price> {
         match (self.best_bid(), self.best_ask()) {
-            (Some((bid, _)), Some((ask, _))) => {
-                Some(Price::from_raw((bid.raw() + ask.raw()) / 2))
-            }
+            (Some((bid, _)), Some((ask, _))) => Some(Price::from_raw((bid.raw() + ask.raw()) / 2)),
             _ => None,
         }
     }
 
     fn spread(&self) -> Option<Price> {
         match (self.best_bid(), self.best_ask()) {
-            (Some((bid, _)), Some((ask, _))) => {
-                Some(Price::from_raw(ask.raw() - bid.raw()))
-            }
+            (Some((bid, _)), Some((ask, _))) => Some(Price::from_raw(ask.raw() - bid.raw())),
             _ => None,
         }
     }
 
     fn quote(&self) -> Option<Quote> {
         match (self.best_bid(), self.best_ask()) {
-            (Some((bid_price, bid_qty)), Some((ask_price, ask_qty))) => {
-                Some(Quote::new(
-                    self.instrument_id,
-                    bid_price,
-                    bid_qty,
-                    ask_price,
-                    ask_qty,
-                    self.timestamp,
-                ))
-            }
+            (Some((bid_price, bid_qty)), Some((ask_price, ask_qty))) => Some(Quote::new(
+                self.instrument_id,
+                bid_price,
+                bid_qty,
+                ask_price,
+                ask_qty,
+                self.timestamp,
+            )),
             _ => None,
         }
     }
@@ -385,11 +392,7 @@ mod tests {
     use super::*;
     use nano_feed::messages::{BookEntry, BookUpdate, EntryType, UpdateAction};
 
-    fn create_book_update(
-        security_id: i32,
-        entries: Vec<BookEntry>,
-        seq: u32,
-    ) -> BookUpdate {
+    fn create_book_update(security_id: i32, entries: Vec<BookEntry>, seq: u32) -> BookUpdate {
         BookUpdate {
             transact_time: 1_000_000_000,
             match_event_indicator: 0x81,
@@ -413,24 +416,28 @@ mod tests {
     fn test_apply_update() {
         let mut book = OrderBook::new(1);
 
-        let update = create_book_update(1, vec![
-            BookEntry {
-                price: 50000,
-                quantity: 100,
-                num_orders: 5,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Bid,
-            },
-            BookEntry {
-                price: 50010,
-                quantity: 50,
-                num_orders: 3,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Offer,
-            },
-        ], 1);
+        let update = create_book_update(
+            1,
+            vec![
+                BookEntry {
+                    price: 50000,
+                    quantity: 100,
+                    num_orders: 5,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Bid,
+                },
+                BookEntry {
+                    price: 50010,
+                    quantity: 50,
+                    num_orders: 3,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Offer,
+                },
+            ],
+            1,
+        );
 
         book.apply_book_update(&update);
 
@@ -450,24 +457,28 @@ mod tests {
     fn test_mid_price_and_spread() {
         let mut book = OrderBook::new(1);
 
-        let update = create_book_update(1, vec![
-            BookEntry {
-                price: 50000,
-                quantity: 100,
-                num_orders: 5,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Bid,
-            },
-            BookEntry {
-                price: 50020,
-                quantity: 50,
-                num_orders: 3,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Offer,
-            },
-        ], 1);
+        let update = create_book_update(
+            1,
+            vec![
+                BookEntry {
+                    price: 50000,
+                    quantity: 100,
+                    num_orders: 5,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Bid,
+                },
+                BookEntry {
+                    price: 50020,
+                    quantity: 50,
+                    num_orders: 3,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Offer,
+                },
+            ],
+            1,
+        );
 
         book.apply_book_update(&update);
 
@@ -483,31 +494,35 @@ mod tests {
         let mut book = OrderBook::new(1);
 
         // Add a level
-        let update1 = create_book_update(1, vec![
-            BookEntry {
+        let update1 = create_book_update(
+            1,
+            vec![BookEntry {
                 price: 50000,
                 quantity: 100,
                 num_orders: 5,
                 price_level: 1,
                 action: UpdateAction::New,
                 entry_type: EntryType::Bid,
-            },
-        ], 1);
+            }],
+            1,
+        );
         book.apply_book_update(&update1);
 
         assert!(book.best_bid().is_some());
 
         // Delete it
-        let update2 = create_book_update(1, vec![
-            BookEntry {
+        let update2 = create_book_update(
+            1,
+            vec![BookEntry {
                 price: 50000,
                 quantity: 0,
                 num_orders: 0,
                 price_level: 1,
                 action: UpdateAction::Delete,
                 entry_type: EntryType::Bid,
-            },
-        ], 2);
+            }],
+            2,
+        );
         book.apply_book_update(&update2);
 
         assert!(book.best_bid().is_none());
@@ -517,32 +532,36 @@ mod tests {
     fn test_multiple_levels() {
         let mut book = OrderBook::new(1);
 
-        let update = create_book_update(1, vec![
-            BookEntry {
-                price: 50000,
-                quantity: 100,
-                num_orders: 5,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Bid,
-            },
-            BookEntry {
-                price: 49990,
-                quantity: 200,
-                num_orders: 10,
-                price_level: 2,
-                action: UpdateAction::New,
-                entry_type: EntryType::Bid,
-            },
-            BookEntry {
-                price: 49980,
-                quantity: 150,
-                num_orders: 8,
-                price_level: 3,
-                action: UpdateAction::New,
-                entry_type: EntryType::Bid,
-            },
-        ], 1);
+        let update = create_book_update(
+            1,
+            vec![
+                BookEntry {
+                    price: 50000,
+                    quantity: 100,
+                    num_orders: 5,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Bid,
+                },
+                BookEntry {
+                    price: 49990,
+                    quantity: 200,
+                    num_orders: 10,
+                    price_level: 2,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Bid,
+                },
+                BookEntry {
+                    price: 49980,
+                    quantity: 150,
+                    num_orders: 8,
+                    price_level: 3,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Bid,
+                },
+            ],
+            1,
+        );
 
         book.apply_book_update(&update);
 
@@ -564,24 +583,28 @@ mod tests {
     fn test_vwap() {
         let mut book = OrderBook::new(1);
 
-        let update = create_book_update(1, vec![
-            BookEntry {
-                price: 10000,
-                quantity: 100,
-                num_orders: 5,
-                price_level: 1,
-                action: UpdateAction::New,
-                entry_type: EntryType::Offer,
-            },
-            BookEntry {
-                price: 10010,
-                quantity: 100,
-                num_orders: 5,
-                price_level: 2,
-                action: UpdateAction::New,
-                entry_type: EntryType::Offer,
-            },
-        ], 1);
+        let update = create_book_update(
+            1,
+            vec![
+                BookEntry {
+                    price: 10000,
+                    quantity: 100,
+                    num_orders: 5,
+                    price_level: 1,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Offer,
+                },
+                BookEntry {
+                    price: 10010,
+                    quantity: 100,
+                    num_orders: 5,
+                    price_level: 2,
+                    action: UpdateAction::New,
+                    entry_type: EntryType::Offer,
+                },
+            ],
+            1,
+        );
 
         book.apply_book_update(&update);
 
@@ -590,4 +613,3 @@ mod tests {
         assert_eq!(vwap.raw(), 10003); // Integer division
     }
 }
-

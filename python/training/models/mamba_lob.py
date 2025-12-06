@@ -1,6 +1,5 @@
 """Mamba-based LOB prediction model for sub-microsecond inference."""
 
-import math
 from typing import Optional
 
 import torch
@@ -94,7 +93,7 @@ class MambaBlock(nn.Module):
     def ssm(self, x: torch.Tensor) -> torch.Tensor:
         """Selective state space model computation."""
         batch, seq_len, _ = x.shape
-        device = x.device
+        _ = x.device  # Used implicitly in tensor operations
 
         # Get SSM parameters
         A = -torch.exp(self.A_log.float())
