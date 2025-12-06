@@ -6,7 +6,7 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/yourusername/nanoARB/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/nanoARB/actions)
+[![CI](https://github.com/dhir1007/nanoARB/actions/workflows/ci.yml/badge.svg)](https://github.com/dhir1007/nanoARB/actions)
 [![codecov](https://codecov.io/gh/yourusername/nanoARB/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/nanoARB)
 
 _A production-grade statistical arbitrage and market-making engine built in Rust with sub-microsecond inference latency._
