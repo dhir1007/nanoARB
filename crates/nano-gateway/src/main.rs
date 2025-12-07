@@ -195,20 +195,22 @@ async fn run_backtest(
 async fn run_simulation(_config: &AppConfig, metrics: &MetricsRegistry) -> anyhow::Result<()> {
     tracing::info!("Starting simulation mode");
 
-    // In a full implementation, this would:
-    // 1. Connect to market data feed
-    // 2. Run the strategy in real-time
-    // 3. Track paper trades
-
-    // For now, run continuous synthetic simulation with metrics
+    // For now, run continuous synthetic simulation with realistic trading metrics
     tracing::info!("Running continuous simulation (press Ctrl+C to stop)");
 
     use nano_feed::synthetic::{SyntheticConfig, SyntheticGenerator};
     use std::time::Duration;
+    use rand::Rng;
 
     let syn_config = SyntheticConfig::es_futures();
     let mut generator = SyntheticGenerator::new(syn_config);
+    let mut rng = rand::thread_rng();
+    
     let mut iteration = 0u64;
+    let mut position: i64 = 0;
+    let mut pnl: f64 = 0.0;
+    let mut total_orders = 0u64;
+    let mut total_fills = 0u64;
 
     loop {
         // Generate synthetic events
@@ -216,17 +218,51 @@ async fn run_simulation(_config: &AppConfig, metrics: &MetricsRegistry) -> anyho
             let _event = generator.next_event();
         }
 
+        // Simulate trading activity
+        let should_trade = rng.gen_bool(0.3); // 30% chance to trade each iteration
+        
+        if should_trade {
+            // Simulate order submission
+            total_orders += 1;
+            metrics.record_order();
+            metrics.record_order_latency(rng.gen_range(400..800)); // Order latency 400-800ns
+            
+            // 80% fill rate
+            if rng.gen_bool(0.8) {
+                total_fills += 1;
+                metrics.record_fill();
+                
+                // Random position change (-5 to +5)
+                let pos_change: i64 = rng.gen_range(-5..=5);
+                position += pos_change;
+                
+                // Simulate P&L change (market making earns small amounts frequently)
+                let pnl_change: f64 = rng.gen_range(-50.0..75.0); // Slight positive bias
+                pnl += pnl_change;
+            }
+        }
+
         // Record metrics
-        let latency_ns = 500 + (iteration % 1000); // Simulated latency
+        let latency_ns = 500 + (iteration % 1000);
         metrics.record_event(latency_ns);
+        metrics.set_position(position);
+        metrics.set_pnl(pnl);
+        
+        // Record book update and inference latency
+        metrics.record_book_update_latency(rng.gen_range(50..150)); // 50-150ns
+        metrics.record_inference_latency(rng.gen_range(600..1000)); // 600-1000ns
         
         iteration += 1;
 
         // Log progress every 10 seconds
         if iteration % 100 == 0 {
             tracing::info!(
-                "Simulation running: {} iterations, recording metrics",
-                iteration * 100
+                "Simulation: {} events | Orders: {} | Fills: {} | Position: {} | P&L: ${:.2}",
+                iteration * 100,
+                total_orders,
+                total_fills,
+                position,
+                pnl
             );
         }
 

@@ -75,7 +75,7 @@
       },
       "targets": [
         {
-          "expr": "rate(nanoarb_orders_total[1m])",
+          "expr": "rate(nanoarb_orders_total_total[1m]) * 60",
           "refId": "A"
         }
       ],
@@ -99,7 +99,7 @@
       },
       "targets": [
         {
-          "expr": "rate(nanoarb_fills_total[1m])",
+          "expr": "rate(nanoarb_fills_total_total[1m]) * 60",
           "refId": "A"
         }
       ],
@@ -196,7 +196,7 @@
       },
       "targets": [
         {
-          "expr": "rate(nanoarb_events_total[1m])",
+          "expr": "rate(nanoarb_events_total_total[1m])",
           "legendFormat": "Events/sec",
           "refId": "A"
         }
