@@ -23,10 +23,12 @@
 )]
 
 pub mod config;
+pub mod engine_state;
 pub mod metrics;
 pub mod server;
 
 pub use config::AppConfig;
+pub use engine_state::EngineState;
 pub use metrics::MetricsRegistry;
 
 /// Prelude for convenient imports
