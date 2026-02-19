@@ -65,6 +65,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # Metrics & Monitoring
 prometheus-client = "0.22"
 
+# Web Framework
+axum = { version = "0.7", features = ["macros"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
+tower-http = { version = "0.5", features = ["cors"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+
 # ML Inference  
 ndarray = { version = "0.15", features = ["serde"] }
 # ort = { version = "2.0.0-rc.0", features = ["half"] } # Disabled - requires newer Rust

@@ -7,7 +7,7 @@
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/dhir1007/nanoARB/actions/workflows/ci.yml/badge.svg)](https://github.com/dhir1007/nanoARB/actions)
-[![codecov](https://codecov.io/gh/yourusername/nanoARB/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/nanoARB)
+[![codecov](https://codecov.io/gh/dhir1007/nanoARB/branch/main/graph/badge.svg)](https://codecov.io/gh/dhir1007/nanoARB)
 
 _A production-grade statistical arbitrage and market-making engine built in Rust with sub-microsecond inference latency._
 
@@ -112,38 +112,83 @@ NanoARB is a high-frequency trading engine designed for CME futures markets (ES,
 
 ### Prerequisites
 
-- Rust 1.75+
-- Python 3.11+ (for training)
-- Docker & Docker Compose (optional)
+- **Rust 1.75+** — [Install](https://rustup.rs/)
+- **Node.js 18+** and **pnpm** — for the dashboard UI
+- **Python 3.11+** — for ML model training (optional)
+- **Docker Desktop** — for Prometheus/Grafana monitoring (optional)
 
-### Installation
+### One Command Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/nanoARB.git
+git clone https://github.com/dhir1007/nanoARB.git
 cd nanoARB
 
-# Build in release mode
+# Start everything (builds Rust engine + launches UI)
+./start.sh
+```
+
+This builds the Rust trading engine in release mode, installs UI dependencies if needed, and starts both services:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Rust Engine** | http://localhost:9090 | Trading engine with SSE streaming API |
+| **Dashboard UI** | http://localhost:3000 | Real-time trading dashboard |
+| Metrics | http://localhost:9090/metrics | Prometheus metrics endpoint |
+| Health | http://localhost:9090/health | Health check |
+| API State | http://localhost:9090/api/state | Full engine state (JSON) |
+| SSE Stream | http://localhost:9090/api/stream | Server-Sent Events stream |
+| Backtest API | http://localhost:9090/api/backtest | POST backtest config, get results |
+
+Press **Ctrl+C** to stop all services, or run `./stop.sh`.
+
+### Manual Start (Step by Step)
+
+```bash
+# 1. Build the Rust engine
 cargo build --release
 
-# Run tests
-cargo test --workspace
+# 2. Start the trading engine (background)
+./target/release/nanoarb &
 
-# Run benchmarks
-cargo bench --workspace
+# 3. Start the dashboard UI
+cd nano-arb-ui-development
+pnpm install
+pnpm dev
 ```
 
 ### Running a Backtest
 
 ```bash
-# Run with default configuration
+# CLI backtest with synthetic data
 cargo run --release --bin nanoarb -- --backtest
 
-# With custom configuration
+# With custom config
 cargo run --release --bin nanoarb -- --config config.toml --backtest
 
-# With verbose logging
-cargo run --release --bin nanoarb -- --backtest --verbose
+# Via API (while engine is running)
+curl -X POST http://localhost:9090/api/backtest \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"ES","startDate":"2024-01-01","endDate":"2024-12-31",
+       "initialCapital":1000000,"spreadMultiplier":1.0,"inventoryLimit":50,
+       "skewFactor":0.5,"useML":true,"maxDrawdown":5.0,"positionLimit":50}'
+```
+
+### Monitoring Dashboard (Grafana + Prometheus)
+
+```bash
+# Requires Docker Desktop running
+cd docker
+docker compose -f docker-compose-monitoring.yml up -d
+
+# Access Grafana
+open http://localhost:3000    # Login: admin / nanoarb
+
+# Access Prometheus
+open http://localhost:9091
+
+# Stop monitoring
+docker compose -f docker-compose-monitoring.yml down
 ```
 
 ### Training Models
@@ -151,28 +196,21 @@ cargo run --release --bin nanoarb -- --backtest --verbose
 ```bash
 cd python/training
 
+# Create virtual environment
+python3 -m venv venv && source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
-# Train Mamba model
+# Train Mamba model (GPU recommended)
 python train.py --epochs 50 --export-onnx --benchmark
-
-# The trained model will be exported to checkpoints/model.onnx
 ```
 
-### Docker Deployment
+### Run Tests & Benchmarks
 
 ```bash
-cd docker
-
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f nanoarb
-
-# Access Grafana dashboard
-open http://localhost:3000  # admin/nanoarb
+cargo test --workspace
+cargo bench --workspace
 ```
 
 ## Performance
