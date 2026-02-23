@@ -4,7 +4,7 @@
 
 **Nanosecond-Level CME Futures Market-Making Engine**
 
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-1.84%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/dhir1007/nanoARB/actions/workflows/ci.yml/badge.svg)](https://github.com/dhir1007/nanoARB/actions)
 [![codecov](https://codecov.io/gh/dhir1007/nanoARB/branch/main/graph/badge.svg)](https://codecov.io/gh/dhir1007/nanoARB)
