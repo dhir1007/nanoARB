@@ -14,6 +14,13 @@ use nano_gateway::engine_state::{
 use nano_gateway::metrics::MetricsRegistry;
 use nano_gateway::server::{start_metrics_server, AppStatus, ServerState};
 
+fn default_port() -> u16 {
+    std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(9090)
+}
+
 #[derive(Parser, Debug)]
 #[command(name = "nanoarb")]
 #[command(version = "0.1.0")]
@@ -27,7 +34,7 @@ struct Args {
     data: Option<String>,
     #[arg(short, long)]
     verbose: bool,
-    #[arg(short, long, default_value = "9090")]
+    #[arg(short, long, default_value_t = default_port())]
     metrics_port: u16,
 }
 

@@ -15,7 +15,8 @@ _A production-grade statistical arbitrage and market-making engine built in Rust
 [Architecture](#architecture) •
 [Quick Start](#quick-start) •
 [Performance](#performance) •
-[Documentation](#documentation)
+[Deployment](#deployment-free-hosting) •
+[API Reference](#api-reference)
 
 </div>
 
@@ -387,6 +388,43 @@ cargo test -p nano-lob test_microprice
 # Run benchmarks
 cargo bench --workspace
 ```
+
+## Deployment (Free Hosting)
+
+The project deploys as two services: the Rust trading engine on **Render** and the Next.js dashboard on **Vercel**.
+
+### 1. Deploy Rust Backend on Render
+
+1. Sign up at [render.com](https://render.com) with GitHub
+2. **New > Web Service** → connect `dhir1007/nanoARB`
+3. Configure:
+   - **Name**: `nanoarb-engine`
+   - **Runtime**: Docker
+   - **Dockerfile Path**: `docker/Dockerfile`
+   - **Instance Type**: Free
+4. Environment variables: `RUST_LOG=info`
+5. Deploy — you'll get a URL like `https://nanoarb-engine.onrender.com`
+
+> **Note**: Free tier spins down after 15 min idle. First request after cold-start takes ~30-60s.
+
+### 2. Deploy Dashboard UI on Vercel
+
+1. Sign up at [vercel.com](https://vercel.com) with GitHub
+2. **Add New > Project** → import `dhir1007/nanoARB`
+3. Configure:
+   - **Root Directory**: `nano-arb-ui-development`
+   - **Framework**: Next.js (auto-detected)
+4. Environment variable: `NEXT_PUBLIC_API_URL=https://nanoarb-engine.onrender.com`
+5. Deploy — you'll get a URL like `https://nanoarb.vercel.app`
+
+### Live URLs
+
+| Service | URL |
+|---------|-----|
+| Dashboard | `https://nanoarb.vercel.app` |
+| Engine API | `https://nanoarb-engine.onrender.com/api/state` |
+| Health Check | `https://nanoarb-engine.onrender.com/health` |
+| Metrics | `https://nanoarb-engine.onrender.com/metrics` |
 
 ## Contributing
 

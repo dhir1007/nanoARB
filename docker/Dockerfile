@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 
 # Copy manifests first for better caching
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.loc[k] ./
 COPY crates/nano-core/Cargo.toml crates/nano-core/
 COPY crates/nano-feed/Cargo.toml crates/nano-feed/
 COPY crates/nano-lob/Cargo.toml crates/nano-lob/
@@ -75,16 +75,17 @@ COPY --chown=nanoarb:nanoarb docker/config.toml /app/config.toml
 # Create directories for data and logs
 RUN mkdir -p /app/data /app/logs /app/models
 
-# Expose metrics port
+# Expose port (Render injects PORT env var; defaults to 9090 locally)
 EXPOSE 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9090/health || exit 1
+    CMD curl -f http://localhost:${PORT:-9090}/health || exit 1
 
 # Set environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
+ENV PORT=9090
 ENV NANOARB_CONFIG=/app/config.toml
 
 # Entry point
