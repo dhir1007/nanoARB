@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import type { PnlPoint, PerformanceMetrics } from "@/lib/mock-data"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 import {
   AreaChart,
   Area,
@@ -66,9 +67,12 @@ export function PnlPanel({ pnlCurve, metrics }: PnlPanelProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <h3 className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        P&L & Performance
-      </h3>
+      <div className="flex items-center gap-1.5 pb-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          P&L & Performance
+        </h3>
+        <PanelInfo {...PANEL_INFO.pnl} />
+      </div>
 
       {/* Stat cards grid */}
       <div className="grid grid-cols-6 gap-2 pb-2">

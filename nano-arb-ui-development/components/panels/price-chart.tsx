@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import type { PriceTick } from "@/lib/mock-data"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 import {
   ComposedChart,
   Area,
@@ -77,6 +78,7 @@ export function PriceChartPanel({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             ES Futures
           </h3>
+          <PanelInfo {...PANEL_INFO.priceChart} />
           <span className="font-mono text-lg font-bold text-foreground">
             {currentPrice.toFixed(2)}
           </span>

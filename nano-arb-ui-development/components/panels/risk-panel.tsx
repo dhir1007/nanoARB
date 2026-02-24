@@ -1,6 +1,7 @@
 "use client"
 
 import type { RiskState } from "@/lib/mock-data"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -19,9 +20,12 @@ export function RiskPanel({ riskState }: RiskPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between pb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Risk Management
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Risk Management
+          </h3>
+          <PanelInfo {...PANEL_INFO.risk} />
+        </div>
         {riskState.killSwitchTripped ? (
           <Badge variant="destructive" className="gap-1 text-[10px]">
             <ShieldAlert className="h-3 w-3" /> TRIPPED

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import type { LatencySample } from "@/lib/mock-data"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 import {
   BarChart,
   Bar,
@@ -101,9 +102,12 @@ export function LatencyPanel({ latencySamples }: LatencyPanelProps) {
   return (
     <div className="flex h-full flex-col" style={{ minHeight: 160 }}>
       <div className="flex items-center justify-between pb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Latency Monitor
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Latency Monitor
+          </h3>
+          <PanelInfo {...PANEL_INFO.latency} />
+        </div>
         <div className="flex items-center gap-4">
           {[
             { label: "p50", value: stats.p50 },
