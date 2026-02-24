@@ -34,7 +34,11 @@ export function TradingDashboard({ state }: TradingDashboardProps) {
         <TradeBlotter trades={state.trades} />
       </div>
       <div className="col-span-7 bg-background p-2">
-        <PnlPanel pnlCurve={state.pnlCurve} metrics={state.metrics} />
+        <PnlPanel
+          pnlCurve={state.pnlCurve}
+          fullPnlCurve={state.fullPnlCurve}
+          metrics={state.metrics}
+        />
       </div>
 
       {/* Row 3: Latency Monitor (full width) */}

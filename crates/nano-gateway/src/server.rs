@@ -1,6 +1,7 @@
 //! HTTP server for metrics, health checks, SSE streaming, and backtest API.
 
 use std::convert::Infallible;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -35,6 +36,8 @@ pub struct ServerState {
     pub status: RwLock<AppStatus>,
     pub engine: Arc<RwLock<EngineState>>,
     pub sse_tx: broadcast::Sender<EngineState>,
+    /// When true, the simulation loop will reset its state on the next tick.
+    pub reset_requested: Arc<AtomicBool>,
 }
 
 impl ServerState {
@@ -45,7 +48,20 @@ impl ServerState {
             status: RwLock::new(AppStatus::Starting),
             engine: Arc::new(RwLock::new(EngineState::default())),
             sse_tx,
+            reset_requested: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub fn request_reset(&self) {
+        self.reset_requested.store(true, Ordering::Relaxed);
+    }
+
+    pub fn clear_reset(&self) {
+        self.reset_requested.store(false, Ordering::Relaxed);
+    }
+
+    pub fn is_reset_requested(&self) -> bool {
+        self.reset_requested.load(Ordering::Relaxed)
     }
 
     pub async fn set_status(&self, status: AppStatus) {
@@ -80,6 +96,7 @@ fn app(state: Arc<ServerState>) -> Router {
         .route("/health", get(health_handler))
         .route("/api/state", get(state_handler))
         .route("/api/stream", get(sse_handler))
+        .route("/api/restart", post(restart_handler))
         .route("/api/backtest", post(backtest_handler))
         .layer(cors)
         .with_state(state)
@@ -131,6 +148,13 @@ async fn health_handler(State(state): State<Arc<ServerState>>) -> Response {
 async fn state_handler(State(state): State<Arc<ServerState>>) -> Json<EngineState> {
     let engine = state.engine.read().await;
     Json(engine.clone())
+}
+
+/// POST /api/restart — Request simulation reset. Clears trades, P&L curve, and restarts from tick 0.
+async fn restart_handler(State(state): State<Arc<ServerState>>) -> Response {
+    state.request_reset();
+    let body = serde_json::json!({ "ok": true, "message": "Restart requested" });
+    (StatusCode::OK, Json(body)).into_response()
 }
 
 /// GET /api/stream — Server-Sent Events stream of engine state updates.

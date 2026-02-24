@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FlaskConical,
   Info,
+  RotateCcw,
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ interface DashboardShellProps {
   onViewChange: (view: "trading" | "backtest" | "about") => void
   isRunning: boolean
   onToggleRunning: () => void
+  onRestart?: () => void
   clock: number
   currentPrice: number
   children: React.ReactNode
@@ -35,6 +37,7 @@ export function DashboardShell({
   onViewChange,
   isRunning,
   onToggleRunning,
+  onRestart,
   clock,
   currentPrice,
   children,
@@ -228,6 +231,24 @@ export function DashboardShell({
             >
               {isRunning ? "Pause" : "Resume"}
             </Button>
+            {onRestart && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRestart}
+                    className="h-7 gap-1 text-xs"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Restart
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Reset simulation: clear trades, P&L, and start fresh from tick 0
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </header>
 

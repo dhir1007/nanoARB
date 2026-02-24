@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type { PnlPoint, PerformanceMetrics } from "@/lib/mock-data"
 import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
+import { Button } from "@/components/ui/button"
 import {
   AreaChart,
   Area,
@@ -15,6 +16,7 @@ import {
 
 interface PnlPanelProps {
   pnlCurve: PnlPoint[]
+  fullPnlCurve?: PnlPoint[]
   metrics: PerformanceMetrics
 }
 
@@ -24,10 +26,20 @@ const RED = "#ef4444"
 const GRID_COLOR = "#1e293b"
 const MUTED = "#64748b"
 
-export function PnlPanel({ pnlCurve, metrics }: PnlPanelProps) {
+export function PnlPanel({
+  pnlCurve,
+  fullPnlCurve = [],
+  metrics,
+}: PnlPanelProps) {
+  const [viewMode, setViewMode] = useState<"recent" | "full">("recent")
+
+  const curveToShow = viewMode === "full" && fullPnlCurve.length > 0
+    ? fullPnlCurve
+    : pnlCurve
+
   const chartData = useMemo(
-    () => pnlCurve.map((p, i) => ({ idx: i, pnl: p.pnl })),
-    [pnlCurve]
+    () => curveToShow.map((p, i) => ({ idx: i, time: p.time, pnl: p.pnl })),
+    [curveToShow]
   )
 
   const pnlColor = metrics.totalPnl >= 0 ? GREEN : RED
@@ -67,11 +79,32 @@ export function PnlPanel({ pnlCurve, metrics }: PnlPanelProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-1.5 pb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          P&L & Performance
-        </h3>
-        <PanelInfo {...PANEL_INFO.pnl} />
+      <div className="flex items-center justify-between pb-2">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            P&L & Performance
+          </h3>
+          <PanelInfo {...PANEL_INFO.pnl} />
+        </div>
+        <div className="flex gap-0.5">
+          <Button
+            variant={viewMode === "recent" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-6 px-2 text-[10px]"
+            onClick={() => setViewMode("recent")}
+          >
+            Recent
+          </Button>
+          <Button
+            variant={viewMode === "full" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-6 px-2 text-[10px]"
+            onClick={() => setViewMode("full")}
+            disabled={fullPnlCurve.length === 0}
+          >
+            Full
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards grid */}

@@ -133,6 +133,33 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
     let mut prev_pnl: f64 = 0.0;
 
     loop {
+        // Check for restart request
+        if state.is_reset_requested() {
+            state.clear_reset();
+            clock = 0;
+            position = 0;
+            cumulative_pnl = 0.0;
+            peak_pnl = 0.0;
+            total_orders = 0;
+            total_fills = 0;
+            total_trades = 0;
+            win_count = 0;
+            trade_id_counter = 0;
+            price_ticks.clear();
+            trades.clear();
+            latency_samples.clear();
+            pnl_curve.clear();
+            risk_alerts.clear();
+            alert_id_counter = 0;
+            long_exposure = 0.0;
+            short_exposure = 0.0;
+            pnl_returns.clear();
+            prev_pnl = 0.0;
+            book = OrderBook::new(1);
+            generator = SyntheticGenerator::new(SyntheticConfig::es_futures());
+            tracing::info!("Simulation restarted");
+        }
+
         clock += 1;
 
         // ── 1. Feed market data into real order book ──
