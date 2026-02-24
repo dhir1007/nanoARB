@@ -68,7 +68,7 @@ impl SyntheticConfig {
             avg_spread_ticks: 1,
             avg_quantity: 100,
             num_levels: 10,
-            volatility: 0.3,
+            volatility: 4.0, // Higher volatility for irregular price movement (was 0.3)
             trade_frequency: 0.4,
             avg_trade_size: 3,
             ..Default::default()
