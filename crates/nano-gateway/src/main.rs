@@ -182,7 +182,7 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
         } else {
             5000.0
         };
-        let display_price = mid_price / 100.0;
+        let display_price = mid_price;
 
         // ── 3. ML inference (simulated timing, real signal logic) ──
         let t_inference = Instant::now();
@@ -371,14 +371,14 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
         for i in 0..15 {
             if let Some((price, qty)) = book.bid_at_level(i) {
                 bids.push(OrderBookLevel {
-                    price: (price.as_f64() / 100.0 * 100.0).round() / 100.0,
+                    price: (price.as_f64() * 100.0).round() / 100.0,
                     size: qty.value(),
                     orders: rng.gen_range(1..15),
                 });
             }
             if let Some((price, qty)) = book.ask_at_level(i) {
                 asks.push(OrderBookLevel {
-                    price: (price.as_f64() / 100.0 * 100.0).round() / 100.0,
+                    price: (price.as_f64() * 100.0).round() / 100.0,
                     size: qty.value(),
                     orders: rng.gen_range(1..15),
                 });
