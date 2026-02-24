@@ -24,6 +24,8 @@ export interface SimulationState {
   riskState: RiskState
   metrics: PerformanceMetrics
   pnlCurve: PnlPoint[]
+  /** Accumulated P&L points for full-session view (cleared on restart) */
+  fullPnlCurve: PnlPoint[]
 }
 
 const INITIAL_STATE: SimulationState = {
@@ -57,6 +59,7 @@ const INITIAL_STATE: SimulationState = {
     avgTradeUs: 0,
   },
   pnlCurve: [],
+  fullPnlCurve: [],
 }
 
 export function useEngineConnection() {
@@ -76,9 +79,18 @@ export function useEngineConnection() {
 
     es.addEventListener("state", (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data) as SimulationState
-        setState(data)
-        setIsRunning(data.isRunning)
+        const data = JSON.parse(event.data) as Omit<SimulationState, "fullPnlCurve">
+        setState((prev) => {
+          const seen = new Set(prev.fullPnlCurve.map((p) => p.time))
+          const newPoints = (data.pnlCurve ?? []).filter((p) => !seen.has(p.time))
+          const merged =
+            data.clock < prev.clock || data.clock < 10
+              ? [...newPoints]
+              : [...prev.fullPnlCurve, ...newPoints]
+          const fullPnlCurve = merged.sort((a, b) => a.time - b.time)
+          return { ...data, fullPnlCurve }
+        })
+        setIsRunning(data.isRunning ?? true)
         backoffMs.current = 1000
       } catch {
         // ignore malformed events
@@ -123,10 +135,19 @@ export function useEngineConnection() {
     }
   }, [isRunning, connect, disconnect])
 
+  const restart = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/api/restart`, { method: "POST" })
+      setState((prev) => ({ ...prev, fullPnlCurve: [] }))
+    } catch {
+      // ignore
+    }
+  }, [])
+
   useEffect(() => {
     connect()
     return () => disconnect()
   }, [connect, disconnect])
 
-  return { ...state, isRunning, toggleRunning }
+  return { ...state, isRunning, toggleRunning, restart }
 }

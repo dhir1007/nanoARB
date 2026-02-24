@@ -18,13 +18,13 @@ export function PanelInfo({ title, description, engineering }: PanelInfoProps) {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-secondary hover:text-muted-foreground"
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border/50 bg-secondary/50 text-muted-foreground transition-colors hover:border-primary/30 hover:bg-secondary hover:text-foreground"
           aria-label={`Info about ${title}`}
         >
-          <Info className="h-3 w-3" />
+          <Info className="h-3.5 w-3.5" />
         </button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-80 space-y-2">
+      <PopoverContent side="bottom" align="start" className="z-[100] w-80 space-y-2 border-border bg-popover shadow-xl">
         <p className="text-xs font-semibold text-foreground">{title}</p>
         <p className="text-xs leading-relaxed text-muted-foreground">
           {description}

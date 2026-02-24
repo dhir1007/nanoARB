@@ -22,6 +22,7 @@ export default function Home() {
         onViewChange={setCurrentView}
         isRunning={simulation.isRunning}
         onToggleRunning={simulation.toggleRunning}
+        onRestart={currentView === "trading" ? simulation.restart : undefined}
         clock={simulation.clock}
         currentPrice={simulation.currentPrice}
       >
