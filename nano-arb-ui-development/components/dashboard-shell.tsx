@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FlaskConical,
+  Info,
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,8 +16,8 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 interface DashboardShellProps {
-  currentView: "trading" | "backtest"
-  onViewChange: (view: "trading" | "backtest") => void
+  currentView: "trading" | "backtest" | "about"
+  onViewChange: (view: "trading" | "backtest" | "about") => void
   isRunning: boolean
   onToggleRunning: () => void
   clock: number
@@ -100,6 +101,18 @@ export function DashboardShell({
           >
             <BarChart3 className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Analytics</span>}
+          </button>
+          <button
+            onClick={() => onViewChange("about")}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors",
+              currentView === "about"
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <Info className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>About</span>}
           </button>
         </nav>
 
