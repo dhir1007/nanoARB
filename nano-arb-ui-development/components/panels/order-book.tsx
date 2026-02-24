@@ -2,6 +2,7 @@
 
 import type { OrderBook } from "@/lib/mock-data"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 
 interface OrderBookPanelProps {
   orderBook: OrderBook
@@ -16,9 +17,12 @@ export function OrderBookPanel({ orderBook }: OrderBookPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between pb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Order Book
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Order Book
+          </h3>
+          <PanelInfo {...PANEL_INFO.orderBook} />
+        </div>
         <span className="font-mono text-xs text-muted-foreground">
           Spread:{" "}
           <span className="text-primary">{orderBook.spread.toFixed(2)}</span>

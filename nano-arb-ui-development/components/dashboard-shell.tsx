@@ -13,6 +13,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 interface DashboardShellProps {
@@ -138,46 +143,83 @@ export function DashboardShell({
         {/* Top bar */}
         <header className="flex h-12 items-center justify-between border-b border-border bg-secondary/30 px-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">INSTRUMENT</span>
-              <span className="font-mono text-sm font-semibold text-foreground">
-                ES CME Futures
-              </span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex cursor-help items-center gap-2">
+                  <span className="text-xs text-muted-foreground">INSTRUMENT</span>
+                  <span className="font-mono text-sm font-semibold text-foreground">
+                    ES CME Futures
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                CME E-mini S&P 500 futures — the most liquid futures contract globally
+              </TooltipContent>
+            </Tooltip>
             <Separator orientation="vertical" className="h-5" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">PRICE</span>
-              <span className="font-mono text-sm font-semibold text-primary">
-                {currentPrice.toFixed(2)}
-              </span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex cursor-help items-center gap-2">
+                  <span className="text-xs text-muted-foreground">PRICE</span>
+                  <span className="font-mono text-sm font-semibold text-primary">
+                    {currentPrice.toFixed(2)}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                Real-time microprice derived from order book bid/ask imbalance
+              </TooltipContent>
+            </Tooltip>
             <Separator orientation="vertical" className="h-5" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">SESSION</span>
-              <span className="font-mono text-xs text-foreground">
-                {formatClock(clock)}
-              </span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex cursor-help items-center gap-2">
+                  <span className="text-xs text-muted-foreground">SESSION</span>
+                  <span className="font-mono text-xs text-foreground">
+                    {formatClock(clock)}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                Elapsed simulation time since engine start
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  isRunning ? "bg-green-500 animate-pulse" : "bg-red-500"
-                )}
-              />
-              <span className="text-xs text-muted-foreground">
-                {isRunning ? "LIVE" : "PAUSED"}
-              </span>
-            </div>
-            <Badge
-              variant="outline"
-              className="border-primary/30 font-mono text-xs text-primary"
-            >
-              Mamba SSM
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex cursor-help items-center gap-2">
+                  <div
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      isRunning ? "bg-green-500 animate-pulse" : "bg-red-500"
+                    )}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {isRunning ? "LIVE" : "PAUSED"}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isRunning
+                  ? "Engine is streaming live simulation data via SSE"
+                  : "Click Resume to connect to the Rust engine"}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="cursor-help border-primary/30 font-mono text-xs text-primary"
+                >
+                  Mamba SSM
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Mamba State-Space Model — 10-50× faster than Transformers for sequence modeling. Predicts LOB price direction at 580ns inference latency.
+              </TooltipContent>
+            </Tooltip>
             <Button
               variant="outline"
               size="sm"

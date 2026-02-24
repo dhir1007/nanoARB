@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react"
 import type { Trade } from "@/lib/mock-data"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { PanelInfo, PANEL_INFO } from "@/components/panel-info"
 
 interface TradeBlotterProps {
   trades: Trade[]
@@ -27,9 +28,12 @@ export function TradeBlotter({ trades }: TradeBlotterProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between pb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Trade Blotter
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Trade Blotter
+          </h3>
+          <PanelInfo {...PANEL_INFO.tradeBlotter} />
+        </div>
         <span className="font-mono text-[10px] text-muted-foreground">
           {trades.length} fills
         </span>
