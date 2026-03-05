@@ -4,6 +4,7 @@ import { useState } from "react"
 import {
   Activity,
   BarChart3,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   FlaskConical,
@@ -101,16 +102,6 @@ export function DashboardShell({
             {!collapsed && <span>Backtester</span>}
           </button>
           <button
-            onClick={() => onViewChange("trading")}
-            className={cn(
-              "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors",
-              "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            <BarChart3 className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Analytics</span>}
-          </button>
-          <button
             onClick={() => onViewChange("about")}
             className={cn(
               "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors",
@@ -122,6 +113,15 @@ export function DashboardShell({
             <Info className="h-4 w-4 shrink-0" />
             {!collapsed && <span>About</span>}
           </button>
+          <a
+            href="https://dhir1007-nanoarb-9.mintlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <BookOpen className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Docs</span>}
+          </a>
         </nav>
 
         {/* Collapse toggle */}
@@ -223,6 +223,19 @@ export function DashboardShell({
                 Mamba State-Space Model — 10-50× faster than Transformers for sequence modeling. Predicts LOB price direction at 580ns inference latency.
               </TooltipContent>
             </Tooltip>
+            <a
+              href="https://dhir1007-nanoarb-9.mintlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Badge
+                variant="outline"
+                className="cursor-pointer border-border font-mono text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+              >
+                <BookOpen className="mr-1 h-3 w-3" />
+                Docs
+              </Badge>
+            </a>
             <Button
               variant="outline"
               size="sm"
