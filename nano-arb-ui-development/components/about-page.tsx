@@ -13,6 +13,7 @@ import {
   Zap,
   Database,
   BarChart3,
+  BookOpen,
   Brain,
   Shield,
   Activity,
@@ -274,6 +275,16 @@ export function AboutPage() {
       {/* Links */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-4 pt-6">
+          <a
+            href="https://dhir1007-nanoarb-9.mintlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <BookOpen className="h-4 w-4" />
+            Documentation
+            <ExternalLink className="h-3 w-3" />
+          </a>
           <a
             href="https://github.com/dhir1007/nanoARB"
             target="_blank"
