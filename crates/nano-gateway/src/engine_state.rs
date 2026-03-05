@@ -190,6 +190,18 @@ pub struct EngineState {
     pub risk_state: RiskState,
     pub metrics: PerformanceMetrics,
     pub pnl_curve: VecDeque<PnlPoint>,
+    /// Label for the active data source (e.g. "Synthetic ES Futures" or "Replay: ESH25_20250106")
+    #[serde(default)]
+    pub data_source: String,
+    /// Label for the active trading strategy (e.g. "MarketMaker" or "Signal")
+    #[serde(default)]
+    pub strategy: String,
+    /// Whether the data source is finite (historical replay) vs infinite (synthetic)
+    #[serde(default)]
+    pub is_replay: bool,
+    /// Records consumed / total for replay progress (0.0-1.0)
+    #[serde(default)]
+    pub replay_progress: f64,
 }
 
 impl Default for EngineState {
@@ -205,6 +217,10 @@ impl Default for EngineState {
             risk_state: RiskState::default(),
             metrics: PerformanceMetrics::default(),
             pnl_curve: VecDeque::with_capacity(200),
+            data_source: "Synthetic ES Futures".into(),
+            strategy: "MarketMaker".into(),
+            is_replay: false,
+            replay_progress: 0.0,
         }
     }
 }

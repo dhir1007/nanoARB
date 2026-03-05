@@ -25,6 +25,9 @@ export default function Home() {
         onRestart={currentView === "trading" ? simulation.restart : undefined}
         clock={simulation.clock}
         currentPrice={simulation.currentPrice}
+        dataSource={simulation.dataSource}
+        strategy={simulation.strategy}
+        isReplay={simulation.isReplay}
       >
         {currentView === "trading" && <TradingDashboard state={simulation} />}
         {currentView === "backtest" && <BacktestDashboard />}

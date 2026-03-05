@@ -26,6 +26,14 @@ export interface SimulationState {
   pnlCurve: PnlPoint[]
   /** Accumulated P&L points for full-session view (cleared on restart) */
   fullPnlCurve: PnlPoint[]
+  /** Active data source label */
+  dataSource?: string
+  /** Active strategy name */
+  strategy?: string
+  /** Whether running in historical replay mode */
+  isReplay?: boolean
+  /** Replay progress 0.0 to 1.0 */
+  replayProgress?: number
 }
 
 const INITIAL_STATE: SimulationState = {

@@ -60,14 +60,18 @@ pub mod messages;
 pub mod parser;
 pub mod reader;
 pub mod synthetic;
+pub mod dbn_adapter;
+pub mod data_source;
 
 pub use error::{FeedError, FeedResult};
 pub use messages::*;
 pub use parser::MdpParser;
+pub use data_source::{DataSource, DbnReplaySource, create_data_source};
 
 /// Prelude for convenient imports
 pub mod prelude {
     pub use crate::error::{FeedError, FeedResult};
     pub use crate::messages::*;
     pub use crate::parser::MdpParser;
+    pub use crate::data_source::{DataSource, create_data_source};
 }

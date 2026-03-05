@@ -18,6 +18,12 @@ pub struct AppConfig {
     pub model_path: Option<PathBuf>,
     /// Trading configuration
     pub trading: TradingConfig,
+    /// Data source configuration
+    #[serde(default)]
+    pub data_source: DataSourceConfig,
+    /// Strategy configuration
+    #[serde(default)]
+    pub strategy: StrategyConfig,
 }
 
 impl Default for AppConfig {
@@ -29,6 +35,8 @@ impl Default for AppConfig {
             data_dir: PathBuf::from("data"),
             model_path: None,
             trading: TradingConfig::default(),
+            data_source: DataSourceConfig::default(),
+            strategy: StrategyConfig::default(),
         }
     }
 }
@@ -56,6 +64,103 @@ impl Default for TradingConfig {
             initial_capital: 1_000_000.0,
             max_position: 50,
             max_order_size: 10,
+        }
+    }
+}
+
+/// Data source type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum DataSourceType {
+    /// Synthetic data generator
+    Synthetic,
+    /// Historical DBN file replay
+    Historical,
+}
+
+impl Default for DataSourceType {
+    fn default() -> Self {
+        Self::Synthetic
+    }
+}
+
+/// Data source configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DataSourceConfig {
+    /// Source type: "synthetic" or "historical"
+    #[serde(default)]
+    pub source_type: DataSourceType,
+    /// Path to DBN data file (required for historical)
+    pub data_file: Option<PathBuf>,
+    /// Replay speed multiplier (1.0 = real-time)
+    #[serde(default = "default_replay_speed")]
+    pub replay_speed: f64,
+}
+
+fn default_replay_speed() -> f64 {
+    1.0
+}
+
+impl Default for DataSourceConfig {
+    fn default() -> Self {
+        Self {
+            source_type: DataSourceType::Synthetic,
+            data_file: None,
+            replay_speed: 1.0,
+        }
+    }
+}
+
+/// Strategy type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum StrategyType {
+    /// Market maker strategy (quotes bid/ask around mid)
+    MarketMaker,
+    /// Signal-based strategy (uses ML features)
+    Signal,
+}
+
+impl Default for StrategyType {
+    fn default() -> Self {
+        Self::MarketMaker
+    }
+}
+
+/// Strategy configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StrategyConfig {
+    /// Which strategy to run
+    #[serde(default)]
+    pub strategy_type: StrategyType,
+    /// Base spread in ticks (for market maker)
+    #[serde(default = "default_spread")]
+    pub base_spread_ticks: i64,
+    /// Order size per level
+    #[serde(default = "default_order_size")]
+    pub order_size: u32,
+    /// Number of levels to quote (for market maker)
+    #[serde(default = "default_num_levels")]
+    pub num_levels: usize,
+}
+
+fn default_spread() -> i64 {
+    2
+}
+fn default_order_size() -> u32 {
+    5
+}
+fn default_num_levels() -> usize {
+    3
+}
+
+impl Default for StrategyConfig {
+    fn default() -> Self {
+        Self {
+            strategy_type: StrategyType::MarketMaker,
+            base_spread_ticks: 2,
+            order_size: 5,
+            num_levels: 3,
         }
     }
 }

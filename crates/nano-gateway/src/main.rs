@@ -80,8 +80,15 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Running in backtest mode");
         run_backtest(&config, args.data.as_deref(), &metrics).await?;
     } else {
+        // CLI --data flag overrides config file
+        let mut sim_config = config.clone();
+        if let Some(ref data_path) = args.data {
+            sim_config.data_source.source_type =
+                nano_gateway::config::DataSourceType::Historical;
+            sim_config.data_source.data_file = Some(data_path.into());
+        }
         tracing::info!("Running in simulation mode (live trading disabled)");
-        run_simulation(&state, &metrics).await?;
+        run_simulation(&state, &metrics, &sim_config).await?;
     }
 
     state.set_status(AppStatus::Stopped).await;
@@ -91,27 +98,86 @@ async fn main() -> anyhow::Result<()> {
 
 // ---------------------------------------------------------------------------
 // Simulation mode — populates EngineState with real order book data + SSE
+// Supports both synthetic and historical DBN replay via DataSource trait
 // ---------------------------------------------------------------------------
 
-async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> anyhow::Result<()> {
-    use nano_core::traits::OrderBook as OrderBookTrait;
+async fn run_simulation(
+    state: &Arc<ServerState>,
+    metrics: &MetricsRegistry,
+    config: &AppConfig,
+) -> anyhow::Result<()> {
+    use nano_backtest::config::{ExecutionConfig, FeeConfig};
+    use nano_backtest::execution::SimulatedExchange;
+    use nano_core::traits::{OrderBook as OrderBookTrait, Strategy};
+    use nano_core::types::Side;
+    use nano_feed::data_source::DataSource;
     use nano_feed::synthetic::{SyntheticConfig, SyntheticGenerator};
+    use nano_gateway::config::{DataSourceType, StrategyType};
     use nano_lob::features::LobFeatureExtractor;
     use nano_lob::orderbook::OrderBook;
+    use nano_strategy::market_maker::{MarketMakerConfig, MarketMakerStrategy};
+    use nano_strategy::signals::{SignalConfig, SignalStrategy};
     use rand::Rng;
     use std::collections::VecDeque;
     use std::time::Duration;
 
-    tracing::info!("Running continuous simulation (press Ctrl+C to stop)");
+    // ── Create data source based on config ──
+    let source_label: String;
+    let mut data_source: Box<dyn DataSource> = match config.data_source.source_type {
+        DataSourceType::Historical => {
+            let path = config
+                .data_source
+                .data_file
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("data_file required for historical replay"))?;
+            tracing::info!("Using historical data: {}", path.display());
+            let src = nano_feed::DbnReplaySource::open(
+                path,
+                config.data_source.replay_speed,
+                true,
+            )?;
+            source_label = src.label().to_string();
+            Box::new(src)
+        }
+        DataSourceType::Synthetic => {
+            tracing::info!("Using synthetic data generator");
+            let gen = SyntheticGenerator::new(SyntheticConfig::es_futures());
+            source_label = gen.label().to_string();
+            Box::new(gen)
+        }
+    };
 
-    let syn_config = SyntheticConfig::es_futures();
-    let mut generator = SyntheticGenerator::new(syn_config);
+    // ── Create strategy based on config ──
+    let mut strategy: Box<dyn Strategy> = match config.strategy.strategy_type {
+        StrategyType::MarketMaker => {
+            let mm_config = MarketMakerConfig {
+                base_spread_ticks: config.strategy.base_spread_ticks,
+                max_inventory: config.trading.max_position,
+                order_size: config.strategy.order_size,
+                num_levels: config.strategy.num_levels,
+                ..Default::default()
+            };
+            tracing::info!("Strategy: MarketMaker (spread={}, levels={})",
+                config.strategy.base_spread_ticks, config.strategy.num_levels);
+            Box::new(MarketMakerStrategy::new("MM", 1, mm_config, 12.5))
+        }
+        StrategyType::Signal => {
+            let sig_config = SignalConfig::default();
+            tracing::info!("Strategy: Signal-based");
+            Box::new(SignalStrategy::new("Signal", 1, sig_config, 10, 50, 12.5))
+        }
+    };
+
+    // ── Paper execution engine ──
+    let fee_config = FeeConfig::default();
+    let exec_config = ExecutionConfig::default();
+    let mut exchange = SimulatedExchange::new(fee_config, exec_config);
+
     let feature_extractor = LobFeatureExtractor::new();
     let mut book = OrderBook::new(1);
     let mut rng = rand::thread_rng();
 
     let mut clock: u64 = 0;
-    let mut position: i64 = 0;
     let mut cumulative_pnl: f64 = 0.0;
     let mut peak_pnl: f64 = 0.0;
     let mut total_orders: u64 = 0;
@@ -132,12 +198,15 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
     let mut pnl_returns: VecDeque<f64> = VecDeque::with_capacity(50);
     let mut prev_pnl: f64 = 0.0;
 
+    let is_finite = data_source.is_finite();
+
+    tracing::info!("Starting paper trading: {source_label}");
+
     loop {
         // Check for restart request
         if state.is_reset_requested() {
             state.clear_reset();
             clock = 0;
-            position = 0;
             cumulative_pnl = 0.0;
             peak_pnl = 0.0;
             total_orders = 0;
@@ -156,23 +225,61 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             pnl_returns.clear();
             prev_pnl = 0.0;
             book = OrderBook::new(1);
-            generator = SyntheticGenerator::new(SyntheticConfig::es_futures());
-            tracing::info!("Simulation restarted");
+            strategy.reset();
+            exchange = SimulatedExchange::new(FeeConfig::default(), ExecutionConfig::default());
+            // Re-create data source on restart
+            data_source = match config.data_source.source_type {
+                DataSourceType::Historical => {
+                    let path = config.data_source.data_file.as_ref().unwrap();
+                    Box::new(nano_feed::DbnReplaySource::open(
+                        path, config.data_source.replay_speed, true,
+                    )?)
+                }
+                DataSourceType::Synthetic => {
+                    Box::new(SyntheticGenerator::new(SyntheticConfig::es_futures()))
+                }
+            };
+            tracing::info!("Paper trading restarted");
         }
 
         clock += 1;
 
-        // ── 1. Feed market data into real order book ──
+        // ── 1. Feed market data into order book ──
         let t_market = Instant::now();
-        for _ in 0..10 {
-            let event = generator.next_event();
-            if let nano_feed::MdpMessage::BookUpdate(ref update) = event {
-                book.apply_book_update(update);
+        let events_per_tick = if is_finite { 1 } else { 10 };
+        let mut got_data = false;
+        for _ in 0..events_per_tick {
+            match data_source.next_event() {
+                Some(event) => {
+                    match event {
+                        nano_feed::MdpMessage::BookUpdate(ref update) => {
+                            book.apply_book_update(update);
+                        }
+                        nano_feed::MdpMessage::Snapshot(ref snap) => {
+                            book.apply_snapshot(snap);
+                        }
+                        _ => {}
+                    }
+                    got_data = true;
+                }
+                None => {
+                    if is_finite {
+                        tracing::info!("Historical data exhausted after {} ticks", clock);
+                        // Keep the engine running so user can see final state
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        return Ok(());
+                    }
+                }
             }
+        }
+        if !got_data && is_finite {
+            tracing::info!("No more data at tick {clock}");
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            return Ok(());
         }
         let market_data_ns = t_market.elapsed().as_nanos() as f64;
 
-        // ── 2. Extract features (real microprice, imbalance, etc.) ──
+        // ── 2. Extract features ──
         let t_features = Instant::now();
         let features = feature_extractor.extract(&book);
         let feature_ns = t_features.elapsed().as_nanos() as f64;
@@ -184,7 +291,7 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
         };
         let display_price = mid_price;
 
-        // ── 3. ML inference (simulated timing, real signal logic) ──
+        // ── 3. ML signal generation ──
         let t_inference = Instant::now();
         let signal = if features.imbalance_l1 > 0.15 {
             "buy"
@@ -197,65 +304,65 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
         std::hint::black_box(&signal);
         let inference_ns = t_inference.elapsed().as_nanos() as f64;
 
-        // ── 4. Quote calculation (simulated) ──
-        let t_quote = Instant::now();
-        std::hint::black_box(features.microprice);
-        let quote_ns = t_quote.elapsed().as_nanos() as f64;
-
-        // ── 5. Trading decisions ──
+        // ── 4. Strategy generates orders ──
         let t_order = Instant::now();
-        let should_trade = rng.gen_bool(0.3);
-        if should_trade {
+        let orders = strategy.on_market_data(&book);
+        let quote_ns = t_order.elapsed().as_nanos() as f64;
+
+        // ── 5. Submit orders to paper exchange and match ──
+        let position = strategy.position();
+        for order in &orders {
             total_orders += 1;
             metrics.record_order();
-            metrics.record_order_latency(t_order.elapsed().as_nanos() as u64);
+            let ts = nano_core::types::Timestamp::now();
+            exchange.submit_order(order.clone(), ts);
+        }
 
-            if rng.gen_bool(0.8) {
-                total_fills += 1;
-                total_trades += 1;
-                metrics.record_fill();
-                trade_id_counter += 1;
+        let fill_results = exchange.match_orders(&book, nano_core::types::Timestamp::now());
+        for fill_result in &fill_results {
+            total_fills += 1;
+            total_trades += 1;
+            metrics.record_fill();
+            trade_id_counter += 1;
 
-                let side_buy = rng.gen_bool(0.5);
-                let qty: u32 = rng.gen_range(1..=10);
-                let pos_delta: i64 = if side_buy { qty as i64 } else { -(qty as i64) };
-                position += pos_delta;
+            let fill = &fill_result.fill;
+            strategy.on_fill(fill);
 
-                if pos_delta > 0 {
-                    long_exposure += qty as f64 * display_price * 50.0;
-                } else {
-                    short_exposure += qty as f64 * display_price * 50.0;
-                }
+            let fill_price = fill.price.as_f64();
+            let fill_qty = fill.quantity.value();
+            let side_buy = fill.side == Side::Buy;
 
-                let trade_pnl: f64 = rng.gen_range(-50.0..75.0);
-                cumulative_pnl += trade_pnl;
-
-                if trade_pnl > 0.0 {
-                    win_count += 1;
-                }
-
-                let signal_sources = ["ML", "Skew", "Spread"];
-                let source = signal_sources[rng.gen_range(0..3)];
-                let total_latency_us =
-                    (market_data_ns + feature_ns + inference_ns + quote_ns + t_order.elapsed().as_nanos() as f64)
-                        / 1000.0;
-
-                let trade = TradeRecord {
-                    id: format!("T-{:06}", trade_id_counter),
-                    time: clock,
-                    side: if side_buy { "BUY".into() } else { "SELL".into() },
-                    price: (display_price * 100.0).round() / 100.0,
-                    qty,
-                    pnl: (trade_pnl * 100.0).round() / 100.0,
-                    latency_us: (total_latency_us * 100.0).round() / 100.0,
-                    signal_source: source.into(),
-                };
-
-                if trades.len() >= 100 {
-                    trades.pop_front();
-                }
-                trades.push_back(trade);
+            if side_buy {
+                long_exposure += fill_qty as f64 * fill_price * 50.0;
+            } else {
+                short_exposure += fill_qty as f64 * fill_price * 50.0;
             }
+
+            let trade_pnl = strategy.pnl() - cumulative_pnl;
+            cumulative_pnl = strategy.pnl();
+
+            if trade_pnl > 0.0 {
+                win_count += 1;
+            }
+
+            let total_latency_us =
+                (market_data_ns + feature_ns + inference_ns + quote_ns) / 1000.0;
+
+            let trade = TradeRecord {
+                id: format!("T-{:06}", trade_id_counter),
+                time: clock,
+                side: if side_buy { "BUY".into() } else { "SELL".into() },
+                price: (fill_price * 100.0).round() / 100.0,
+                qty: fill_qty,
+                pnl: (trade_pnl * 100.0).round() / 100.0,
+                latency_us: (total_latency_us * 100.0).round() / 100.0,
+                signal_source: signal.into(),
+            };
+
+            if trades.len() >= 100 {
+                trades.pop_front();
+            }
+            trades.push_back(trade);
         }
         let order_ns = t_order.elapsed().as_nanos() as f64;
 
@@ -273,7 +380,7 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             price: (display_price * 100.0).round() / 100.0,
             volume: rng.gen_range(50..500),
             signal: signal.into(),
-            prediction: (prediction / 100.0 * 100.0).round() / 100.0,
+            prediction: (prediction * 100.0).round() / 100.0,
         };
         if price_ticks.len() >= 200 {
             price_ticks.pop_front();
@@ -342,14 +449,14 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             0.0
         };
 
-        // Risk alerts
-        if position.unsigned_abs() > 40 && rng.gen_bool(0.1) {
+        let max_pos = config.trading.max_position;
+        if position.unsigned_abs() as i64 > max_pos * 4 / 5 {
             alert_id_counter += 1;
             risk_alerts.push(RiskAlert {
                 id: format!("A-{alert_id_counter}"),
                 time: clock,
                 level: "warning".into(),
-                message: format!("Position nearing limit: {position}/50"),
+                message: format!("Position nearing limit: {position}/{max_pos}"),
             });
         }
         if max_dd > 500.0 && rng.gen_bool(0.05) {
@@ -365,7 +472,7 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             risk_alerts.drain(0..risk_alerts.len() - 20);
         }
 
-        // ── 8. Build order book snapshot from real book ──
+        // ── 8. Build order book snapshot ──
         let mut bids = Vec::with_capacity(15);
         let mut asks = Vec::with_capacity(15);
         for i in 0..15 {
@@ -408,15 +515,15 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             latency_samples: latency_samples.clone(),
             risk_state: RiskState {
                 position_size: position,
-                position_limit: 50,
-                current_drawdown: (max_dd / 100.0 * 100.0).round() / 100.0,
+                position_limit: max_pos,
+                current_drawdown: (max_dd * 100.0).round() / 100.0,
                 max_drawdown: 5.0,
                 kill_switch_active: true,
                 kill_switch_tripped: false,
                 long_exposure: (long_exposure * 100.0).round() / 100.0,
                 short_exposure: (short_exposure * 100.0).round() / 100.0,
                 net_exposure: (position as f64 * display_price * 50.0 * 100.0).round() / 100.0,
-                inventory_skew: ((position as f64 / 50.0) * 1000.0).round() / 1000.0,
+                inventory_skew: ((position as f64 / max_pos as f64) * 1000.0).round() / 1000.0,
                 alerts: risk_alerts.clone(),
             },
             metrics: PerformanceMetrics {
@@ -433,6 +540,10 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
                 avg_trade_us: (avg_latency * 100.0).round() / 100.0,
             },
             pnl_curve: pnl_curve.clone(),
+            data_source: source_label.clone(),
+            strategy: strategy.name().to_string(),
+            is_replay: is_finite,
+            replay_progress: 0.0,
         };
 
         {
@@ -444,7 +555,8 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
 
         if clock % 100 == 0 {
             tracing::info!(
-                "Tick {} | Orders: {} | Fills: {} | Pos: {} | P&L: ${:.2} | Sharpe: {:.2}",
+                "[{}] Tick {} | Orders: {} | Fills: {} | Pos: {} | P&L: ${:.2} | Sharpe: {:.2}",
+                source_label,
                 clock,
                 total_orders,
                 total_fills,
@@ -454,7 +566,13 @@ async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> 
             );
         }
 
-        tokio::time::sleep(Duration::from_millis(150)).await;
+        // For synthetic mode, sleep between ticks; for replay, pacing is in DataSource
+        if !is_finite {
+            tokio::time::sleep(Duration::from_millis(150)).await;
+        } else {
+            // Yield to tokio runtime so SSE and HTTP requests can be served
+            tokio::task::yield_now().await;
+        }
     }
 }
 

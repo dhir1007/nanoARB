@@ -8,6 +8,7 @@ members = [
     "crates/nano-backtest",
     "crates/nano-strategy",
     "crates/nano-gateway",
+    "tools/dbn-download",
 ]
 
 [workspace.package]

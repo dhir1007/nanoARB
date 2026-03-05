@@ -30,6 +30,9 @@ interface DashboardShellProps {
   onRestart?: () => void
   clock: number
   currentPrice: number
+  dataSource?: string
+  strategy?: string
+  isReplay?: boolean
   children: React.ReactNode
 }
 
@@ -41,6 +44,9 @@ export function DashboardShell({
   onRestart,
   clock,
   currentPrice,
+  dataSource,
+  strategy,
+  isReplay,
   children,
 }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false)
@@ -210,6 +216,27 @@ export function DashboardShell({
                   : "Click Resume to connect to the Rust engine"}
               </TooltipContent>
             </Tooltip>
+            {dataSource && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "cursor-help font-mono text-xs",
+                      isReplay
+                        ? "border-amber-500/30 text-amber-400"
+                        : "border-emerald-500/30 text-emerald-400"
+                    )}
+                  >
+                    {isReplay ? "REPLAY" : "SYNTHETIC"}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  Data: {dataSource}
+                  {strategy && <><br />Strategy: {strategy}</>}
+                </TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge

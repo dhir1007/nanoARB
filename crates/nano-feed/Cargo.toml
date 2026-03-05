@@ -26,6 +26,10 @@ tracing.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
 
+dbn = "0.51"
+zstd = "0.13"
+streaming-iterator = "0.1"
+
 [dev-dependencies]
 criterion.workspace = true
 proptest.workspace = true

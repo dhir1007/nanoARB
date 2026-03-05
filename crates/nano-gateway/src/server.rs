@@ -98,6 +98,7 @@ fn app(state: Arc<ServerState>) -> Router {
         .route("/api/stream", get(sse_handler))
         .route("/api/restart", post(restart_handler))
         .route("/api/backtest", post(backtest_handler))
+        .route("/api/data-files", get(data_files_handler))
         .layer(cors)
         .with_state(state)
 }
@@ -189,6 +190,29 @@ async fn backtest_handler(
                 format!("Backtest task failed: {e}"),
             )
         })?
+}
+
+/// GET /api/data-files — List available .dbn/.dbn.zst files in the data directory.
+async fn data_files_handler() -> Json<serde_json::Value> {
+    let data_dir = std::path::Path::new("data");
+    let mut files: Vec<String> = Vec::new();
+
+    if data_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(data_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".dbn") || name.ends_with(".dbn.zst") {
+                    files.push(format!("data/{name}"));
+                }
+            }
+        }
+    }
+    files.sort();
+
+    Json(serde_json::json!({
+        "files": files,
+        "strategies": ["market_maker", "signal"],
+    }))
 }
 
 /// Run backtest using the real engine with synthetic LOB data.
