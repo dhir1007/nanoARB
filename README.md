@@ -131,15 +131,15 @@ cd nanoARB
 
 This builds the Rust trading engine in release mode, installs UI dependencies if needed, and starts both services:
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Rust Engine** | http://localhost:9090 | Trading engine with SSE streaming API |
-| **Dashboard UI** | http://localhost:3000 | Real-time trading dashboard |
-| Metrics | http://localhost:9090/metrics | Prometheus metrics endpoint |
-| Health | http://localhost:9090/health | Health check |
-| API State | http://localhost:9090/api/state | Full engine state (JSON) |
-| SSE Stream | http://localhost:9090/api/stream | Server-Sent Events stream |
-| Backtest API | http://localhost:9090/api/backtest | POST backtest config, get results |
+| Service          | URL                                | Description                           |
+| ---------------- | ---------------------------------- | ------------------------------------- |
+| **Rust Engine**  | http://localhost:9090              | Trading engine with SSE streaming API |
+| **Dashboard UI** | http://localhost:3000              | Real-time trading dashboard           |
+| Metrics          | http://localhost:9090/metrics      | Prometheus metrics endpoint           |
+| Health           | http://localhost:9090/health       | Health check                          |
+| API State        | http://localhost:9090/api/state    | Full engine state (JSON)              |
+| SSE Stream       | http://localhost:9090/api/stream   | Server-Sent Events stream             |
+| Backtest API     | http://localhost:9090/api/backtest | POST backtest config, get results     |
 
 Press **Ctrl+C** to stop all services, or run `./stop.sh`.
 

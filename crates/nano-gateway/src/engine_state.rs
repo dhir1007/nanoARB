@@ -1,7 +1,13 @@
-//! Shared engine state streamed to the UI via SSE.
+//! Shared engine state streamed to the UI via Server-Sent Events (SSE).
 //!
 //! Every struct here uses `#[serde(rename_all = "camelCase")]` so JSON field names
-//! match the TypeScript interfaces in the UI without any transformation layer.
+//! match the TypeScript interfaces in `use-engine-connection.ts` without any
+//! transformation layer.
+//!
+//! The top-level [`EngineState`] is serialized to JSON and pushed to every
+//! connected browser on every tick (~6 Hz). It includes market data, risk
+//! metrics, P&L, and — for paper trading — the active data source, strategy
+//! name, and replay progress.
 
 use std::collections::VecDeque;
 

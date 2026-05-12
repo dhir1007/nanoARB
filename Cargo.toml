@@ -8,6 +8,7 @@ members = [
     "crates/nano-backtest",
     "crates/nano-strategy",
     "crates/nano-gateway",
+    "crates/nano-hl",
 ]
 
 [workspace.package]

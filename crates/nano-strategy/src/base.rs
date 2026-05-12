@@ -203,6 +203,12 @@ impl Strategy for BaseStrategy {
 
         if let Some(mid) = self.last_mid {
             self.update_unrealized(mid);
+            // Auto-transition from Initializing → Trading once we have a valid
+            // mid price. Without this, derived strategies (MarketMaker, Signal)
+            // would never pass their `is_ready()` guard and stay idle.
+            if self.state == StrategyState::Initializing {
+                self.state = StrategyState::Trading;
+            }
         }
 
         // Base strategy doesn't generate orders

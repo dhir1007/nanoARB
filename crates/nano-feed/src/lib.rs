@@ -1,11 +1,18 @@
 //! # nano-feed
 //!
-//! CME MDP 3.0 market data feed parser and handler.
+//! Market data feed layer — CME MDP 3.0 parser, synthetic generator, and
+//! Databento DBN replay.
 //!
 //! This crate provides:
 //! - Binary message parsing for CME MDP 3.0 protocol (SBE encoding)
 //! - Message types for incremental book updates, trades, and channel resets
 //! - Zero-copy parsing for minimal latency
+//! - **Synthetic data generator** for demos and testing
+//! - **Databento DBN adapter** (`dbn_adapter`) — converts `Mbp10Msg` records
+//!   into the internal `MdpMessage` types the order book consumes
+//! - **Unified `DataSource` trait** (`data_source`) — lets the engine consume
+//!   market data identically whether it comes from the synthetic generator or
+//!   a historical `.dbn.zst` file
 //!
 //! ## CME MDP 3.0 Overview
 //!
@@ -17,7 +24,7 @@
 //! - `ChannelReset` (Template ID 4): Channel state reset
 //! - `SecurityStatus` (Template ID 30): Instrument status changes
 //!
-//! ## Example
+//! ## Example — Live Parser
 //!
 //! ```rust,ignore
 //! use nano_feed::parser::MdpParser;
@@ -27,13 +34,20 @@
 //! let message = parser.parse(&raw_bytes)?;
 //!
 //! match message {
-//!     MdpMessage::BookUpdate(update) => {
-//!         // Handle book update
-//!     }
-//!     MdpMessage::Trade(trade) => {
-//!         // Handle trade
-//!     }
+//!     MdpMessage::BookUpdate(update) => { /* ... */ }
+//!     MdpMessage::Trade(trade) => { /* ... */ }
 //!     _ => {}
+//! }
+//! ```
+//!
+//! ## Example — Historical Replay
+//!
+//! ```rust,ignore
+//! use nano_feed::data_source::{DbnReplaySource, DataSource};
+//!
+//! let mut source = DbnReplaySource::open("data/ESH5_2025-01-06.dbn.zst", 1.0, true)?;
+//! while let Some(msg) = source.next_event() {
+//!     // msg is an MdpMessage at real-time pace
 //! }
 //! ```
 

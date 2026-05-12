@@ -191,6 +191,42 @@ async fn backtest_handler(
         })?
 }
 
+/// GET /api/data-files — Discovery endpoint for the paper-trading UI.
+///
+/// Scans the `data/` directory for downloadable Databento files (`.dbn` and
+/// `.dbn.zst`) and returns them alongside the list of available strategies.
+/// The UI uses this to populate the data-source selector and strategy dropdown.
+///
+/// # Response
+///
+/// ```json
+/// {
+///   "files": ["data/ESH5_2025-01-06.dbn.zst", ...],
+///   "strategies": ["market_maker", "signal"]
+/// }
+/// ```
+async fn data_files_handler() -> Json<serde_json::Value> {
+    let data_dir = std::path::Path::new("data");
+    let mut files: Vec<String> = Vec::new();
+
+    if data_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(data_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".dbn") || name.ends_with(".dbn.zst") {
+                    files.push(format!("data/{name}"));
+                }
+            }
+        }
+    }
+    files.sort();
+
+    Json(serde_json::json!({
+        "files": files,
+        "strategies": ["market_maker", "signal"],
+    }))
+}
+
 /// Run backtest using the real engine with synthetic LOB data.
 /// Generates daily equity curve by running the market-making strategy
 /// against synthetically generated order book events.

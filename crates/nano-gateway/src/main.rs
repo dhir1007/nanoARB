@@ -90,7 +90,22 @@ async fn main() -> anyhow::Result<()> {
 }
 
 // ---------------------------------------------------------------------------
-// Simulation mode — populates EngineState with real order book data + SSE
+// ---------------------------------------------------------------------------
+// Simulation loop — the core paper-trading engine.
+//
+// Reads market data from a `DataSource` (synthetic or historical DBN replay),
+// maintains a live `OrderBook`, feeds ticks to a `Strategy` (MarketMaker or
+// Signal), and executes resulting orders through a `SimulatedExchange`. All
+// state is pushed to the UI via SSE on every tick.
+//
+// Supports two modes transparently:
+//   1. **Synthetic** (default): Infinite generated ES futures stream.
+//   2. **Historical replay**: Reads a `.dbn.zst` file downloaded from Databento,
+//      pacing events at their original inter-arrival times.
+//
+// The mode and strategy are selected via `AppConfig.data_source` and
+// `AppConfig.strategy`. The CLI `--data <path>` flag overrides the config file
+// to point at a specific DBN file.
 // ---------------------------------------------------------------------------
 
 async fn run_simulation(state: &Arc<ServerState>, metrics: &MetricsRegistry) -> anyhow::Result<()> {
