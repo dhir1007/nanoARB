@@ -75,3 +75,6 @@ prometheus/data/
 coverage/
 lcov.info
 
+models/
+*.onnx
+*.onnx.data
