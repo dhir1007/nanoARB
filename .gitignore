@@ -78,3 +78,7 @@ lcov.info
 models/
 *.onnx
 *.onnx.data
+data/
+models/
+*.onnx.data
+python/training/checkpoints/
