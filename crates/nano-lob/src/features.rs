@@ -296,94 +296,61 @@ impl LobFeatureExtractor {
 }
 
 /// VPIN (Volume-Synchronized Probability of Informed Trading) calculator
+///
+/// Backed by `flowtox::Vpin`: every bucket holds exactly `bucket_size` volume and a
+/// trade that crosses a bucket boundary is split across buckets.
 #[derive(Debug)]
 pub struct VpinCalculator {
-    /// Bucket size in quantity
-    bucket_size: u32,
-    /// Number of buckets for rolling calculation
-    num_buckets: usize,
-    /// Current bucket buy volume
-    current_buy_volume: u32,
-    /// Current bucket sell volume
-    current_sell_volume: u32,
-    /// Historical buckets (`buy_volume`, `sell_volume`)
-    buckets: Vec<(u32, u32)>,
+    inner: flowtox::Vpin,
 }
 
 impl VpinCalculator {
     /// Create a new VPIN calculator
+    ///
+    /// # Panics
+    ///
+    /// Panics if `bucket_size` or `num_buckets` is zero.
     #[must_use]
     pub fn new(bucket_size: u32, num_buckets: usize) -> Self {
         Self {
-            bucket_size,
-            num_buckets,
-            current_buy_volume: 0,
-            current_sell_volume: 0,
-            buckets: Vec::with_capacity(num_buckets),
+            inner: flowtox::Vpin::new(f64::from(bucket_size), num_buckets)
+                .expect("bucket_size and num_buckets must be non-zero"),
         }
     }
 
     /// Add a trade to the calculator
     pub fn add_trade(&mut self, quantity: Quantity, is_buy: bool) {
-        let qty = quantity.value();
-
-        if is_buy {
-            self.current_buy_volume += qty;
+        let side = if is_buy {
+            flowtox::Side::Buy
         } else {
-            self.current_sell_volume += qty;
-        }
-
-        // Check if bucket is complete
-        let total = self.current_buy_volume + self.current_sell_volume;
-        if total >= self.bucket_size {
-            self.buckets
-                .push((self.current_buy_volume, self.current_sell_volume));
-
-            // Keep only last N buckets
-            if self.buckets.len() > self.num_buckets {
-                self.buckets.remove(0);
-            }
-
-            self.current_buy_volume = 0;
-            self.current_sell_volume = 0;
-        }
+            flowtox::Side::Sell
+        };
+        self.inner.update_side(side, f64::from(quantity.value()));
     }
 
     /// Calculate current VPIN value (0 to 1)
     #[must_use]
     pub fn calculate(&self) -> f64 {
-        if self.buckets.is_empty() {
-            return 0.0;
-        }
-
-        let mut abs_imbalance_sum = 0.0;
-        let mut total_volume = 0.0;
-
-        for (buy, sell) in &self.buckets {
-            let buy_f = f64::from(*buy);
-            let sell_f = f64::from(*sell);
-            abs_imbalance_sum += (buy_f - sell_f).abs();
-            total_volume += buy_f + sell_f;
-        }
-
-        if total_volume > 0.0 {
-            abs_imbalance_sum / total_volume
-        } else {
+        let (sum, n) = self
+            .inner
+            .bucket_imbalances()
+            .fold((0.0, 0usize), |(s, n), x| (s + x, n + 1));
+        if n == 0 {
             0.0
+        } else {
+            sum / n as f64
         }
     }
 
     /// Reset the calculator
     pub fn reset(&mut self) {
-        self.current_buy_volume = 0;
-        self.current_sell_volume = 0;
-        self.buckets.clear();
+        self.inner.reset();
     }
 
     /// Get number of complete buckets
     #[must_use]
     pub fn bucket_count(&self) -> usize {
-        self.buckets.len()
+        self.inner.bucket_imbalances().count()
     }
 }
 
@@ -539,6 +506,20 @@ mod tests {
         let value = vpin.calculate();
         // Imbalance = |60-40| = 20, total = 100, VPIN = 20/100 = 0.2
         assert!((value - 0.2).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_vpin_splits_trade_across_buckets() {
+        let mut vpin = VpinCalculator::new(100, 10);
+
+        // Buy 150 fills bucket 1 (100 buy) and carries 50 into bucket 2.
+        vpin.add_trade(Quantity::new(150), true);
+        // Sell 50 closes bucket 2 at 50 buy / 50 sell.
+        vpin.add_trade(Quantity::new(50), false);
+
+        assert_eq!(vpin.bucket_count(), 2);
+        // (|100-0| + |50-50|) / 200 = 0.5
+        assert!((vpin.calculate() - 0.5).abs() < 1e-12);
     }
 
     #[test]
